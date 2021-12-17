@@ -1,6 +1,6 @@
 # Vision-aided-GAN Training
 
-### [video (1m)]() | [website]() |   [paper]()
+### [video (3m)](https://youtu.be/oHdyJNdQ9E4) | [website](https://www.cs.cmu.edu/~vision-aided-gan/) |   [paper](https://arxiv.org/abs/2112.09130)
 <br>
 
 <div class="gif">
