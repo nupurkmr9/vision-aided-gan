@@ -22,20 +22,21 @@ import torch.nn.functional as F
 import dnnlib
 import legacy
 
+
 def project(
     G,
-    target: torch.Tensor, # [C,H,W] and dynamic range [0,255], W & H must match G output resolution
+    target: torch.Tensor,  # [C,H,W] and dynamic range [0,255], W & H must match G output resolution
     *,
-    num_steps                  = 1000,
-    w_avg_samples              = 10000,
-    initial_learning_rate      = 0.1,
-    initial_noise_factor       = 0.05,
-    lr_rampdown_length         = 0.25,
-    lr_rampup_length           = 0.05,
-    noise_ramp_length          = 0.75,
-    regularize_noise_weight    = 1e5,
-    verbose                    = False,
-    w_plus                     = True,
+    num_steps=1000,
+    w_avg_samples=10000,
+    initial_learning_rate=0.1,
+    initial_noise_factor=0.05,
+    lr_rampdown_length=0.25,
+    lr_rampup_length=0.05,
+    noise_ramp_length=0.75,
+    regularize_noise_weight=1e5,
+    verbose=False,
+    w_plus=True,
     device: torch.device
 ):
     assert target.shape == (G.img_channels, G.img_resolution, G.img_resolution)
@@ -44,7 +45,7 @@ def project(
         if verbose:
             print(*args)
 
-    G = copy.deepcopy(G).eval().requires_grad_(False).to(device) # type: ignore
+    G = copy.deepcopy(G).eval().requires_grad_(False).to(device)  # type: ignore
 
     # Compute w stats.
     logprint(f'Computing W midpoint and stddev using {w_avg_samples} samples...')
@@ -58,32 +59,29 @@ def project(
     w_std = (np.sum((w_samples - w_avg) ** 2) / w_avg_samples) ** 0.5
 
     # Setup noise inputs.
-    noise_bufs = { name: buf for (name, buf) in G.synthesis.named_buffers() if 'noise_const' in name }
+    noise_bufs = {name: buf for (name, buf) in G.synthesis.named_buffers() if 'noise_const' in name}
 
     # Features for target image.
     target_images = target.unsqueeze(0).to(device).to(torch.float32)
     if target_images.shape[2] > 256:
         target_images = F.interpolate(target_images, size=(256, 256), mode='area')
-        
+
     # Load VGG16 feature detector.
     url = 'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/metrics/vgg16.pt'
     with dnnlib.util.open_url(url) as f:
         vgg16 = torch.jit.load(f).eval().to(device)
-        
+
     target_features = vgg16(target_images, resize_images=False, return_lpips=True)
 
- 
-
-    w_opt = torch.tensor(w_avg, dtype=torch.float32, device=device, requires_grad=True) # pylint: disable=not-callable
+    w_opt = torch.tensor(w_avg, dtype=torch.float32, device=device, requires_grad=True)  # pylint: disable=not-callable
     w_out = torch.zeros([num_steps] + list(w_opt.shape[1:]), dtype=torch.float32, device=device)
-    optimizer = torch.optim.Adam([w_opt]  + list(noise_bufs.values()), betas=(0.9, 0.999), lr=initial_learning_rate)
+    optimizer = torch.optim.Adam([w_opt] + list(noise_bufs.values()), betas=(0.9, 0.999), lr=initial_learning_rate)
 
     # Init noise.
     for buf in noise_bufs.values():
         buf[:] = torch.randn_like(buf)
         buf.requires_grad = True
 
-    
     for step in range(num_steps):
         # Learning rate schedule.
         t = step / num_steps
@@ -100,26 +98,25 @@ def project(
         ws = (w_opt + w_noise)
         if not w_plus:
             ws = ws.repeat([1, G.mapping.num_ws, 1])
-        
-        
-        synth_images = G.synthesis(ws, noise_mode='const')#, prior = mean_list.to(ws.device))
-        
+
+        synth_images = G.synthesis(ws, noise_mode='const')  # , prior = mean_list.to(ws.device))
+
         # Downsample image to 256x256 if it's larger than that. VGG was built for 224x224 images.
-        synth_images = (synth_images + 1) * (255/2)
+        synth_images = (synth_images + 1) * (255 / 2)
         if synth_images.shape[2] > 256:
             synth_images = F.interpolate(synth_images, size=(256, 256), mode='area')
 
         synth_features = vgg16(synth_images, resize_images=False, return_lpips=True)
 
-        dist =  (target_features - synth_features).square().sum()
-        
+        dist = (target_features - synth_features).square().sum()
+
         # Noise regularization.
         reg_loss = 0.0
         for v in noise_bufs.values():
-            noise = v[None,None,:,:] # must be [1,1,H,W] for F.avg_pool2d()
+            noise = v[None, None, :, :]  # must be [1,1,H,W] for F.avg_pool2d()
             while True:
-                reg_loss += (noise*torch.roll(noise, shifts=1, dims=3)).mean()**2
-                reg_loss += (noise*torch.roll(noise, shifts=1, dims=2)).mean()**2
+                reg_loss += (noise * torch.roll(noise, shifts=1, dims=3)).mean()**2
+                reg_loss += (noise * torch.roll(noise, shifts=1, dims=2)).mean()**2
                 if noise.shape[2] <= 8:
                     break
                 noise = F.avg_pool2d(noise, kernel_size=2)
@@ -139,13 +136,14 @@ def project(
             for buf in noise_bufs.values():
                 buf -= buf.mean()
                 buf *= buf.square().mean().rsqrt()
-    
+
     if w_plus:
         return w_out
     else:
         return w_out.repeat([1, G.mapping.num_ws, 1])
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+
 
 @click.command()
 @click.option('--network', 'network_pkl', help='Network pickle filename', required=True)
@@ -177,7 +175,7 @@ def run_projection(
     print('Loading networks from "%s"...' % network_pkl)
     device = torch.device('cuda')
     with dnnlib.util.open_url(network_pkl) as fp:
-        G = legacy.load_network_pkl(fp)['G_ema'].requires_grad_(False).to(device) # type: ignore
+        G = legacy.load_network_pkl(fp)['G_ema'].requires_grad_(False).to(device)  # type: ignore
 
     # Load target image.
     target_pil = PIL.Image.open(target_fname).convert('RGB')
@@ -191,21 +189,21 @@ def run_projection(
     start_time = perf_counter()
     projected_w_steps = project(
         G,
-        target=torch.tensor(target_uint8.transpose([2, 0, 1]), device=device), # pylint: disable=not-callable
+        target=torch.tensor(target_uint8.transpose([2, 0, 1]), device=device),  # pylint: disable=not-callable
         num_steps=num_steps,
         device=device,
         verbose=True
     )
-    print (f'Elapsed: {(perf_counter()-start_time):.1f} s')
+    print(f'Elapsed: {(perf_counter()-start_time):.1f} s')
 
     # Render debug output: optional video and projected image and W vector.
     os.makedirs(outdir, exist_ok=True)
     if save_video:
         video = imageio.get_writer(f'{outdir}/proj.mp4', mode='I', fps=10, codec='libx264', bitrate='16M')
-        print (f'Saving optimization progress video "{outdir}/proj.mp4"')
+        print(f'Saving optimization progress video "{outdir}/proj.mp4"')
         for projected_w in projected_w_steps:
             synth_image = G.synthesis(projected_w.unsqueeze(0), noise_mode='const')
-            synth_image = (synth_image + 1) * (255/2)
+            synth_image = (synth_image + 1) * (255 / 2)
             synth_image = synth_image.permute(0, 2, 3, 1).clamp(0, 255).to(torch.uint8)[0].cpu().numpy()
             video.append_data(np.concatenate([target_uint8, synth_image], axis=1))
         video.close()
@@ -214,15 +212,14 @@ def run_projection(
     target_pil.save(f'{outdir}/target.png')
     projected_w = projected_w_steps[-1]
     synth_image = G.synthesis(projected_w.unsqueeze(0), noise_mode='const')
-    synth_image = (synth_image + 1) * (255/2)
+    synth_image = (synth_image + 1) * (255 / 2)
     synth_image = synth_image.permute(0, 2, 3, 1).clamp(0, 255).to(torch.uint8)[0].cpu().numpy()
     PIL.Image.fromarray(synth_image, 'RGB').save(f'{outdir}/proj.png')
 
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    run_projection() # pylint: disable=no-value-for-parameter
+    run_projection()  # pylint: disable=no-value-for-parameter
 
-#----------------------------------------------------------------------------
-
+# ----------------------------------------------------------------------------

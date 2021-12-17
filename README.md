@@ -3,34 +3,47 @@
 ### [video (3m)](https://youtu.be/oHdyJNdQ9E4) | [website](https://www.cs.cmu.edu/~vision-aided-gan/) |   [paper](https://arxiv.org/abs/2112.09130)
 <br>
 
-
-Can the collective ``knowledge'' from a large bank of pretrained vision models be leveraged to improve GAN training? If so, with so many models to choose from, which one(s) should be selected, and in what manner are they most effective? 
-
-We find that pretrained computer vision models can significantly improve performance when used in an ensemble of discriminators.  We propose an effective selection mechanism, by probing the linear separability between real and fake samples in pretrained model embeddings, choosing the most accurate model, and progressively adding it to the discriminator ensemble. Interestingly, our method can improve GAN training in both limited data and large-scale settings. Given only 10k training samples, our FID on LSUN Cat matches the StyleGAN2 trained on 1.6M images. On the full dataset, our method improves FID by 1.5x to 2x on cat, church, and horse categories of LSUN. 
-
-
 <div class="gif">
 <img src='images/vision-aided-gan.gif' align="right" width=1000>
 </div>
 
 <br><br><br><br><br>
 
+
+Can the collective *knowledge* from a large bank of pretrained vision models be leveraged to improve GAN training? If so, with so many models to choose from, which one(s) should be selected, and in what manner are they most effective?
+
+We find that pretrained computer vision models can significantly improve performance when used in an ensemble of discriminators.  We propose an effective selection mechanism, by probing the linear separability between real and fake samples in pretrained model embeddings, choosing the most accurate model, and progressively adding it to the discriminator ensemble. Interestingly, our method can improve GAN training in both limited data and large-scale settings. Given only 10k training samples, our FID on LSUN Cat matches the StyleGAN2 trained on 1.6M images. On the full dataset, our method improves FID by 1.5x to 2x on cat, church, and horse categories of LSUN.
+
+
+
+
 Ensembling Off-the-shelf Models for GAN Training <br>
 [Nupur Kumari](https://nupurkmr9.github.io/), [Richard Zhang](https://richzhang.github.io/), [Eli Shechtman](https://research.adobe.com/person/eli-shechtman/), [Jun-Yan Zhu](https://www.cs.cmu.edu/~junyanz/)<br>
 arXiv 2112.09130, 2021
 
+## Quantitative Comparison
+<img src="images/lsun_eval.jpg" width="800px"/><br>
+Our method outperforms recent GAN training methods by a large margin, especially in limited sample setting. For LSUN Cat, we achieve similar FID as StyleGAN2 trained on the full dataset using only $0.7\%$ of the dataset.
+
 ## Example Results
+Below, we show visual comparisons between the baseline StyleGAN2-ADA and our model (Vision-aided GAN) for the
+same randomly sample latent code.
 
 <img src="images/lsuncat1k_compare.gif" width="800px"/>
 
 <img src="images/ffhq1k_compare.gif" width="800px"/>
 
+## Interpolation Videos
+Latent interpolation results of models trained with our method on AnimalFace Cat (160 images), Dog (389 images),  and  Bridge-of-Sighs (100 photos).
+
+<img src="images/interp.gif" width="800px"/><br>
+
 
 ## Requirements
 
 * 64-bit Python 3.8 and PyTorch 1.8.0 (or later). See [https://pytorch.org/](https://pytorch.org/) for PyTorch install instructions.
-* Cuda toolkit 11.0 or later. 
-* python libraries: see requirements.txt 
+* Cuda toolkit 11.0 or later.
+* python libraries: see requirements.txt
 * StyleGAN2 code relies heavily on custom PyTorch extensions. For detail please refer to the repo [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch)
 
 
@@ -51,7 +64,7 @@ python setup.py install
 **[VGG-16](https://github.com/adobe/antialiased-cnns)**: model is automatically downloaded.
 
 
-**[Swin-T(MoBY)](https://github.com/SwinTransformer/Transformer-SSL)**: Create a "pretrained-models" directory and save the downloaded [model](https://drive.google.com/file/d/1PS1Q0tAnUfBWLRPxh9iUrinAxeq7Y--u/view?usp=sharing) there. 
+**[Swin-T(MoBY)](https://github.com/SwinTransformer/Transformer-SSL)**: Create a "pretrained-models" directory and save the downloaded [model](https://drive.google.com/file/d/1PS1Q0tAnUfBWLRPxh9iUrinAxeq7Y--u/view?usp=sharing) there.
 
 
 **[Swin-T(Object Detection)](https://github.com/SwinTransformer/Swin-Transformer-Object-Detection)**: follow the below step for setup. Download the model [here](https://github.com/SwinTransformer/storage/releases/download/v1.0.1/upernet_swin_tiny_patch4_window7_512x512.pth) and save it in the "pretrained-models" directory.
@@ -73,34 +86,34 @@ python setup.py install
 
 **[Face Parsing](https://github.com/switchablenorms/CelebAMask-HQ)**:download the model [here](https://drive.google.com/file/d/1o1m-eT38zNCIFldcRaoWcLvvBtY8S4W3/view?usp=sharing) and save in the "pretrained-models" directory.
 
-**[Face Normals](https://github.com/boukhayma/face_normals)**:download the model [here](https://drive.google.com/file/d/1Qb7CZbM13Zpksa30ywjXEEHHDcVWHju_) and save in the "pretrained-models" directory. 
+**[Face Normals](https://github.com/boukhayma/face_normals)**:download the model [here](https://drive.google.com/file/d/1Qb7CZbM13Zpksa30ywjXEEHHDcVWHju_) and save in the "pretrained-models" directory.
 
 
 
 ## Datasets
 
-Dataset preparation is same as given in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#preparing-datasets). 
+Dataset preparation is same as given in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#preparing-datasets).
 Example setup for LSUN Church
 
 
 **LSUN Church**
 ```.bash
 git clone https://github.com/fyu/lsun.git
-cd lsun 
+cd lsun
 python3 download.py -c church_outdoor
-unzip church_outdoor_train_lmdb.zip 
+unzip church_outdoor_train_lmdb.zip
 cd ../vision-aided-gan
-python dataset_tool.py --source <path-to>/church_outdoor_train_lmdb/ --dest <path-to-datasets>/church1k.zip --max-images 1000  --transform=center-crop --width=256 --height=256 
+python dataset_tool.py --source <path-to>/church_outdoor_train_lmdb/ --dest <path-to-datasets>/church1k.zip --max-images 1000  --transform=center-crop --width=256 --height=256
 ```
 
-datasets can be downloaded from their repsective websites: 
+datasets can be downloaded from their repsective websites:
 
-[FFHQ](https://github.com/NVlabs/ffhq-dataset), [LSUN Categories](http://dl.yf.io/lsun/objects/), [AFHQ](https://github.com/clovaai/stargan-v2), [AnimalFace Dog](https://data-efficient-gans.mit.edu/datasets/AnimalFace-dog.zip), [AnimalFace Cat](https://data-efficient-gans.mit.edu/datasets/AnimalFace-cat.zip), [100-shot Bridge-of-Sighs](https://data-efficient-gans.mit.edu/datasets/100-shot-bridge_of_sighs.zip) 
+[FFHQ](https://github.com/NVlabs/ffhq-dataset), [LSUN Categories](http://dl.yf.io/lsun/objects/), [AFHQ](https://github.com/clovaai/stargan-v2), [AnimalFace Dog](https://data-efficient-gans.mit.edu/datasets/AnimalFace-dog.zip), [AnimalFace Cat](https://data-efficient-gans.mit.edu/datasets/AnimalFace-cat.zip), [100-shot Bridge-of-Sighs](https://data-efficient-gans.mit.edu/datasets/100-shot-bridge_of_sighs.zip)
 
 
 ## Training new networks
 
-**model selection**: returns the computer vision model with highest linear probe accuracy for the best FID model in a folder or the given network file. 
+**model selection**: returns the computer vision model with highest linear probe accuracy for the best FID model in a folder or the given network file.
 
 ```.bash
 python model_selection.py --data mydataset.zip --network  <mynetworkfolder or mynetworkpklfile>
