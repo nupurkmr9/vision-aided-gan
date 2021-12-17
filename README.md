@@ -19,6 +19,12 @@ Ensembling Off-the-shelf Models for GAN Training <br>
 [Nupur Kumari](https://nupurkmr9.github.io/), [Richard Zhang](https://richzhang.github.io/), [Eli Shechtman](https://research.adobe.com/person/eli-shechtman/), [Jun-Yan Zhu](https://www.cs.cmu.edu/~junyanz/)<br>
 arXiv 2112.09130, 2021
 
+## Example Results
+
+<img src="images/lsuncat1k_compare.gif" width="800px"/>
+
+<img src="images/ffhq1k_compare.gif" width="800px"/>
+
 
 ## Requirements
 
