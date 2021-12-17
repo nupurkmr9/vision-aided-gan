@@ -177,13 +177,12 @@ def setup_training_loop_kwargs(
 
     cfg_specs = {
         'auto':      dict(ref_gpus=-1, kimg=25000,  mb=-1, mbstd=-1, fmaps=-1,  lrate=-1,     gamma=-1,   ema=-1,  ramp=0.05, map=2), # Populated dynamically based on resolution and GPU count.
-        'stylegan2': dict(ref_gpus=8,  kimg=25000,  mb=32, mbstd=4,  fmaps=1,   lrate=0.002,  gamma=10,   ema=10,  ramp=None, map=8), # Uses mixed-precision, unlike the original StyleGAN2.
-        'paper256':  dict(ref_gpus=8,  kimg=25000,  mb=64, mbstd=8,  fmaps=0.5, lrate=0.0025, gamma=1,    ema=20,  ramp=None, map=8),
-        'paper512':  dict(ref_gpus=8,  kimg=25000,  mb=64, mbstd=4,  fmaps=1,   lrate=0.0025, gamma=0.5,  ema=20,  ramp=None, map=8),
-        'paper1024': dict(ref_gpus=8,  kimg=25000,  mb=32, mbstd=4,  fmaps=1,   lrate=0.002,  gamma=2,    ema=10,  ramp=None, map=8),
+        'stylegan2': dict(ref_gpus=8,  kimg=25000,  mb=16, mbstd=4,  fmaps=1,   lrate=0.002,  gamma=10,   ema=10,  ramp=None, map=8), # Uses mixed-precision, unlike the original StyleGAN2.
+        'paper256':  dict(ref_gpus=8,  kimg=25000,  mb=16, mbstd=4,  fmaps=0.5, lrate=0.002, gamma=1,    ema=10,  ramp=None, map=8),
+        'paper512':  dict(ref_gpus=8,  kimg=25000,  mb=16, mbstd=4,  fmaps=1,   lrate=0.0025, gamma=0.5,  ema=20,  ramp=None, map=8),
+        'paper1024': dict(ref_gpus=8,  kimg=25000,  mb=16, mbstd=4,  fmaps=1,   lrate=0.002,  gamma=2,    ema=10,  ramp=None, map=8),
         'cifar':     dict(ref_gpus=2,  kimg=100000, mb=64, mbstd=32, fmaps=1,   lrate=0.0025, gamma=0.01, ema=500, ramp=0.05, map=2), 
-        'ffhq1k':    dict(ref_gpus=2,  kimg=25000,  mb=32, mbstd=4,  fmaps=0.5,  lrate=0.002, gamma=1.,   ema=10, ramp=None, map=8),
-        'ffhq1k_2map':dict(ref_gpus=2,  kimg=25000,  mb=32, mbstd=4,  fmaps=1,  lrate=0.002, gamma=1.,   ema=10, ramp=None, map=8),
+        'paper256_2fmap':  dict(ref_gpus=8,  kimg=25000,  mb=16, mbstd=4,  fmaps=1, lrate=0.002, gamma=1,    ema=10,  ramp=None, map=8),
     }
 
     assert cfg in cfg_specs
@@ -325,7 +324,7 @@ def setup_training_loop_kwargs(
         args.augment_kwargs = dnnlib.EasyDict(class_name='training.augment.AugmentPipe', **augpipe_specs[augpipe])
 
     # ----------------------------------
-    # IDE loss
+    # Vision-aided-Adversarial loss
     # ----------------------------------
 
     args.DAux_kwargs = None
@@ -391,8 +390,8 @@ def setup_training_loop_kwargs(
         args.resume_pkl = resume # custom path or url
 
     if resume != 'noresume':
-        # we remove this when we add our loss on a traind model till some iterations 
-        # args.ada_kimg = 100 # make ADA react faster at the beginning
+        if cv is None:
+            args.ada_kimg = 100 # make ADA react faster at the beginning. We remove this when we add our loss on a model trained with standard adversarial loss till some iterations 
         args.ema_rampup = None # disable EMA rampup
         args.exact_resume = exact_resume
         
@@ -550,42 +549,23 @@ def main(ctx, outdir, dry_run, **config_kwargs):
     Examples:
 
     \b
-    # Train with custom dataset using 1 GPU.
-    python train.py --outdir=~/training-runs --data=~/mydataset.zip --gpus=1
-
-    \b
-    # Train class-conditional CIFAR-10 using 2 GPUs.
-    python train.py --outdir=~/training-runs --data=~/datasets/cifar10.zip \\
-        --gpus=2 --cfg=cifar --cond=1
-
-    \b
-    # Transfer learn MetFaces from FFHQ using 4 GPUs.
-    python train.py --outdir=~/training-runs --data=~/datasets/metfaces.zip \\
-        --gpus=4 --cfg=paper1024 --mirror=1 --resume=ffhq1024 --snap=10
-
-    \b
-    # Reproduce original StyleGAN2 config F.
-    python train.py --outdir=~/training-runs --data=~/datasets/ffhq.zip \\
-        --gpus=8 --cfg=stylegan2 --mirror=1 --aug=noaug
+    # Train StyleGAN2 on custom dataset using 1 GPU.
+    python train.py --outdir=~/training-runs --data=~/mydataset.zip --gpus=1 
 
     \b
     Base configs (--cfg):
       auto       Automatically select reasonable defaults based on resolution
                  and GPU count. Good starting point for new datasets.
-      stylegan2  Reproduce results for StyleGAN2 config F at 1024x1024.
-      paper256   Reproduce results for FFHQ and LSUN Cat at 256x256.
-      paper512   Reproduce results for BreCaHAD and AFHQ at 512x512.
-      paper1024  Reproduce results for MetFaces at 1024x1024.
-      cifar      Reproduce results for CIFAR-10 at 32x32.
-      ffhq1k     Rproduce vision-aided-gan training results at 256 resolution
+      paper256         Reproduce results for 256 resolution dataset
+      paper256_2fmap   Reproduce results for 256 resolution dataset with 2x feature channel in G.
+      paper512         Reproduce results for 512 resolution dataset
+      paper1024        Reproduce results for MetFaces at 1024x1024.
+      stylegan2        Reproduce results for StyleGAN2 config F at 1024x1024.
 
     \b
     Transfer learning source networks (--resume):
-      ffhq256        FFHQ trained at 256x256 resolution.
       ffhq512        FFHQ trained at 512x512 resolution.
       ffhq1024       FFHQ trained at 1024x1024 resolution.
-      celebahq256    CelebA-HQ trained at 256x256 resolution.
-      lsundog256     LSUN Dog trained at 256x256 resolution.
       <PATH or URL>  Custom network pickle.
 
      \b
@@ -595,19 +575,23 @@ def main(ctx, outdir, dry_run, **config_kwargs):
       output_type: conv_multi_level for training (discriminator head is over the spatial features of pretrained model)
       output_type: pool for model selection (to enable linear classifier on the feature vector)
       for multiple model training: input is - separated models, i.g. clip-dino-swin
-      <PATH or URL>  Custom network pickle.
-
 
      \b
-    Loss function for computer vision model bsaed discriminator (--cv):
+    Loss function for computer vision model bsaed discriminator (--cv-loss):
       sigmoid: standard loss used in styleGAN2 training
       multilevel: multi-level loss used in CLIP and DINO
       sigmoid_s: sidmoid loss with one sided label smoothing
       multilevel_s: multi level loss with one sided label smoothing
+      for multiple model training:  is - separated models, i.g. clip-dino-swin
 
      \b
     Augmentation for computer vision model bsaed discriminator (--augcv):
       can be either "ada" or "diffaug-policy" where policy is a comma separated augmentation list
+
+     \b
+    Augmentation for original discriminator (--augcv, --diffaugment):
+      --augcv ada: For ADA augmentation
+      --diffaugment <policy>: For DiffAugment, where example policy is 'color,translation,cutout'
 
     """
 

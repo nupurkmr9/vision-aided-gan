@@ -88,7 +88,22 @@ python setup.py install
 
 **[Face Normals](https://github.com/boukhayma/face_normals)**:download the model [here](https://drive.google.com/file/d/1Qb7CZbM13Zpksa30ywjXEEHHDcVWHju_) and save in the "pretrained-models" directory.
 
+## Pretrained Models
+Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/)
 
+**To generate images**: 
+
+```.bash
+python generate.py --outdir=out --trunc=1 --seeds=85,265,297,849 --network=<network.pkl>
+```
+The output is stored in `out` directory controlled by `--outdir`. Our generator architecture is same as styleGAN2 and can be similarly used in the Python code as described in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#using-networks-from-python).
+
+**model evaluation**:
+```.bash
+python calc_metrics.py --network <network.pkl> --metrics fid50k_full --data <dataset> --clean 1
+```
+We use [clean-fid](https://github.com/GaParmar/clean-fid) library to calculate FID metric. For LSUN Church and LSUN Horse, we calclate the full real distribution statistics. For details on calculating the real distribution statistics, please refer to [clean-fid](https://github.com/GaParmar/clean-fid).
+For default FID evaluation of StyleGAN2-ADA use `clean=0`. 
 
 ## Datasets
 
@@ -122,7 +137,7 @@ python model_selection.py --data mydataset.zip --network  <mynetworkfolder or my
 **example training command for training with a single pretrained network from scratch**
 
 ```.bash
-python train.py --outdir=training-models/ --data=mydataset.zip --gpus 2 --metrics fid50k_full --kimg 25000 --cfg ffhq1k --cv input-dino-output-conv_multi_level --cv-loss multilevel_s --augcv ada --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --warmup 1  
+python train.py --outdir=training-models/ --data=mydataset.zip --gpus 2 --metrics fid50k_full --kimg 25000 --cfg paper256 --cv input-dino-output-conv_multi_level --cv-loss multilevel_s --augcv ada --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --warmup 1  
 ```
 
 Training configuration corresponding to training with vision-aided-loss:
@@ -131,7 +146,8 @@ Training configuration corresponding to training with vision-aided-loss:
 * `--warmup=0` should be enabled when training from scratch. Introduces our loss after training with 500k images.
 * `--cv-loss=multilevel` what loss to use on pretrained model based discriminator.
 * `--augcv=ada` performs ADA augmentation on pretrained model based discriminator.
-* `--augpipecv=bgc` ADA augmentation strategy.
+* `--augcv=diffaugment-<policy>` performs DiffAugment on pretrained model based discriminator with given poilcy.
+* `--augpipecv=bgc` ADA augmentation strategy. Note: cutout is always enabled. 
 * `--ada-target-cv=0.3` adjusts ADA target value for pretrained model based discriminator.
 * `--exact-resume=0` enables exact resume along with optimizer state.
 
@@ -141,9 +157,18 @@ Miscellaneous configurations:
 * `--wandb-log=0` enables wandb logging.
 * `--clean=0` enables FID calculation using [clean-fid](https://github.com/GaParmar/clean-fid) if the real distribution statistics are pre-calculated.
 
+Run `python train.py --help` for more details and the full list of args.
 
-**Pretrained Models** can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/)
+## References
 
+```
+@article{kumari2021ensembling,
+  title={Ensembling Off-the-shelf Models for GAN Training},
+  author={Kumari, Nupur and Zhang, Richard and Shechtman, Eli and Zhu, Jun-Yan},
+  journal={arXiv preprint arXiv:2112.09130},
+  year={2021}
+}
+```
 
 ## Acknowledgments
 We thank Muyang Li, Sheng-Yu Wang, Chonghyuk (Andrew) Song for proofreading the draft. We are also grateful to Alexei A. Efros, Sheng-Yu Wang, Taesung Park, and William Peebles for helpful comments and discussion. Our codebase is built on [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch) and [ DiffAugment](https://github.com/mit-han-lab/data-efficient-gans).

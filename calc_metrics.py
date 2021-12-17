@@ -99,9 +99,8 @@ class CommaSeparatedList(click.ParamType):
 @click.option('--mirror', help='Whether the dataset was augmented with x-flips during training [default: look up]', type=bool, metavar='BOOL')
 @click.option('--gpus', help='Number of GPUs to use', type=int, default=1, metavar='INT', show_default=True)
 @click.option('--verbose', help='Print optional information', type=bool, default=True, metavar='BOOL', show_default=True)
-@click.option('--numgen', help='number of generated samples', type=int, default=10000)
+@click.option('--numgen', help='number of generated samples', type=int, default=50000)
 @click.option('--clean', help='Whether FID is clean or not', type=bool, metavar='BOOL', default=False)
-
 
 
 def calc_metrics(ctx, network_pkl, metrics, data, mirror, gpus, verbose, numgen, clean):

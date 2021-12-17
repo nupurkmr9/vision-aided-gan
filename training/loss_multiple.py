@@ -118,7 +118,7 @@ class StyleGAN2Loss(Loss):
                 
                 if self.cv_type is not None:
                     gen_logits, logits_aux = self.run_D(gen_img, gen_c, sync=False)
-                    aux_loss = self.aux_loss.loss(logits_aux, for_real = True, for_G = True)
+                    aux_loss = self.aux_loss.loss(logits_aux, for_real = True)
                     total_loss = 0.
                     for i, each in enumerate(aux_loss):
                         training_stats.report('Loss/G/aux_loss' + str(i), each)
@@ -163,7 +163,7 @@ class StyleGAN2Loss(Loss):
                 gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=False)
                 if self.cv_type is not None and 'output' in self.cv_type:
                     gen_logits, logits_aux = self.run_D(gen_img, gen_c, sync=False, detach=detach)
-                    aux_loss = self.aux_loss.loss(logits_aux, for_real = False, for_G =True)
+                    aux_loss = self.aux_loss.loss(logits_aux, for_real = False)
                     for i, each in enumerate(aux_loss):
                         training_stats.report('Loss/D/aux_loss_fake' + str(i), each)
                         total_loss += each

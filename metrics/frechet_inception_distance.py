@@ -28,20 +28,20 @@ def compute_fid(opts, max_real, num_gen):
         G = copy.deepcopy(opts.G).eval().requires_grad_(False).to(opts.device)
         gen = lambda z: (G(z, None)* 127.5 + 128).clamp(0, 255).to(torch.uint8)
         if 'metfaces' in opts.dataset_kwargs.path:
-            score = fid.compute_fid(gen=gen, dataset_name="metfaces", dataset_res=1024,  mode="clean", dataset_split="train", batch_size=4)
-        elif 'church' in opts.dataset_kwargs.path:
-            score = fid.compute_fid(gen=gen, dataset_name="my_church_full", dataset_res=256,  mode="clean", dataset_split="custom", batch_size=32)
+            score = fid.compute_fid(gen=gen, dataset_name="metfaces", dataset_res=1024,  mode="clean", dataset_split="train", batch_size=8)
         elif 'afhqdog' in opts.dataset_kwargs.path:
             score = fid.compute_fid(gen=gen, dataset_name="afhq_dog", dataset_res=512, mode="clean", dataset_split="train", batch_size=8)
         elif 'afhqcat' in opts.dataset_kwargs.path:
             score = fid.compute_fid(gen=gen, dataset_name="afhq_cat", dataset_res=512, mode="clean", dataset_split="train", batch_size=8)
-        elif 'cat' in opts.dataset_kwargs.path:
-            score = fid.compute_fid(gen=gen, num_gen=num_gen, dataset_name="lsun_cat", dataset_res=256,  mode="clean", dataset_split="trainfull", batch_size=32)
         elif 'afhqwild' in opts.dataset_kwargs.path:
             score = fid.compute_fid(gen=gen, dataset_name="afhq_wild", dataset_res=512, mode="clean", dataset_split="train", batch_size=8)
+        elif 'church' in opts.dataset_kwargs.path:
+            score = fid.compute_fid(gen=gen, dataset_name="church_full", dataset_res=256,  mode="clean", dataset_split="custom", batch_size=32)
+        elif 'cat' in opts.dataset_kwargs.path:
+            score = fid.compute_fid(gen=gen, dataset_name="lsun_cat", dataset_res=256,  mode="clean", dataset_split="trainfull", batch_size=32)
         elif 'horse' in opts.dataset_kwargs.path:
-            score = fid.compute_fid(gen=gen, dataset_name="lsun_horse", dataset_res=256, mode="clean", dataset_split="train", batch_size=64, num_gen=num_gen)
-        elif '1024' in opts.dataset_kwargs.path:
+            score = fid.compute_fid(gen=gen, dataset_name="horse_full", dataset_res=256, mode="clean", dataset_split="custom", batch_size=64)
+        elif 'ffhq1024' in opts.dataset_kwargs.path:
             score = fid.compute_fid(gen=gen, dataset_name="ffhq", dataset_res=1024, mode="clean", dataset_split="trainval70k", batch_size=8)
         elif 'ffhq' in opts.dataset_kwargs.path:
             score = fid.compute_fid(gen=gen, dataset_name="ffhq", dataset_res=256,  mode="clean", dataset_split="trainval70k", batch_size=32)
@@ -58,7 +58,7 @@ def compute_fid(opts, max_real, num_gen):
 
         mu_gen, sigma_gen = metric_utils.compute_feature_stats_for_generator(
             opts=opts, detector_url=detector_url, detector_kwargs=detector_kwargs,
-            rel_lo=0, rel_hi=1, capture_mean_cov=True, max_items=num_gen, batch_size=4).get_mean_cov()
+            rel_lo=0, rel_hi=1, capture_mean_cov=True, max_items=num_gen, batch_size=8).get_mean_cov()
 
         if opts.rank != 0:
             return float('nan')

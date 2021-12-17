@@ -65,7 +65,6 @@ class StyleGAN2Loss(Loss):
                     ws[:, cutoff:] = self.G_mapping(torch.randn_like(z), c, skip_w_avg_update=True)[:, cutoff:]
         with misc.ddp_sync(self.G_synthesis, sync):
             img = self.G_synthesis(ws)
-            
         return img, ws
 
     
@@ -77,7 +76,6 @@ class StyleGAN2Loss(Loss):
         else:
             img1 = img
 
-        
         if self.cv_ensemble is not None:
             if isinstance(self.augment_pipe_cv, str) and 'diffaug' in self.augment_pipe_cv:
                 img_cv = DiffAugment(img, policy=self.augment_pipe_cv.split('diffaug-')[1])
@@ -91,12 +89,12 @@ class StyleGAN2Loss(Loss):
                     cv_feat = self.cv_ensemble(img_cv)
             else:
                 cv_feat = self.cv_ensemble(img_cv)
-                
+
             with misc.ddp_sync(self.D, sync):
                 logits = self.D(img1, c)
             with misc.ddp_sync(self.DAux, sync):
                 logits_aux = self.DAux(cv_feat, c)
-            
+
             return logits, logits_aux
         else:
             with misc.ddp_sync(self.D, sync):
@@ -117,7 +115,7 @@ class StyleGAN2Loss(Loss):
                 
                 if self.cv_type is not None:
                     gen_logits, logits_aux = self.run_D(gen_img, gen_c,sync=False)
-                    aux_loss = self.aux_loss.loss(logits_aux, for_real = True, for_G = True)
+                    aux_loss = self.aux_loss.loss(logits_aux, for_real = True)
                     training_stats.report('Loss/G/aux_loss', aux_loss)
                 else:
                     gen_logits = self.run_D(gen_img, gen_c, sync=False)
@@ -158,7 +156,7 @@ class StyleGAN2Loss(Loss):
                 gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=False)
                 if self.cv_type is not None:
                     gen_logits, logits_aux = self.run_D(gen_img, gen_c, sync=False, detach=detach)
-                    aux_loss = self.aux_loss.loss(logits_aux , for_real = False, for_G =True)
+                    aux_loss = self.aux_loss.loss(logits_aux , for_real = False)
                     training_stats.report('Loss/D/aux_loss_fake', aux_loss)
                     if isinstance(logits_aux, list):
                         training_stats.report('Loss/signs/fake0', logits_aux[-1].sign())
@@ -211,13 +209,12 @@ class StyleGAN2Loss(Loss):
                     with torch.autograd.profiler.record_function('r1_grads'), conv2d_gradfix.no_weight_gradients():
                         r1_grads = torch.autograd.grad(outputs=[real_logits.sum()], inputs=[real_img_tmp], 
                                                        create_graph=True, only_inputs=True)[0]
-                        
 
                     r1_penalty = r1_grads.square().sum([1,2,3])
                     loss_Dr1 = r1_penalty * (self.r1_gamma / 2)
                     training_stats.report('Loss/r1_penalty', r1_penalty)
                     training_stats.report('Loss/D/reg', loss_Dr1)
-                    
+
             with torch.autograd.profiler.record_function(name + '_backward'):
                 if self.cv_type is not None:
                     loss_aux_mask = 0
@@ -229,4 +226,3 @@ class StyleGAN2Loss(Loss):
                     (real_logits * 0 + loss_aux_mask + loss_Dreal + loss_Dr1 + loss_multiplier*aux_loss  ).mean().mul(gain).backward()
                 else:
                     (real_logits * 0 + loss_Dreal + loss_Dr1).mean().mul(gain).backward()
-
