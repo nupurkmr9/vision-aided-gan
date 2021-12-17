@@ -55,17 +55,10 @@ def calc_importance(ctx, network_pkl, data, batch_size=64):
     data_loader_kwargs = {'pin_memory': True, 'num_workers': 1, 'prefetch_factor': 2}
 
     metrics = {}
-    predicted_values_pos = {}
-    predicted_values_neg = {}
-
-    validation_pred_each_cv = []
 
     for cv in cv_list:
 
         metrics[cv] = {}
-
-        input_ = cv.split('input-')[1].split('-output-')[0]
-        output_ = cv.split('output-')[1]
         print("$$$$$$$$$$$$$$$$", cv, "$$$$$$$$$$$$$$$$")
 
         class_name = 'training.cvmodel.CVWrapper'
@@ -88,12 +81,11 @@ def calc_importance(ctx, network_pkl, data, batch_size=64):
             training_set = dnnlib.util.construct_class_by_name(**training_set_kwargs)
 
             training_set_iterator = torch.utils.data.DataLoader(dataset=training_set, batch_size=batch_size, **data_loader_kwargs)
-            images = []
+
             feats = []
             label = []
             epoch = 1
             with torch.no_grad():
-                acc_Dval = []
                 for i in range(epoch):
                     for counter, (val_img, val_c) in enumerate(training_set_iterator):
                         val_img = (val_img.to(device).to(torch.float32) / 127.5 - 1.)
@@ -119,7 +111,6 @@ def calc_importance(ctx, network_pkl, data, batch_size=64):
 
             feats = []
             label = []
-            images = []
 
             with torch.no_grad():
                 for i in range((len(training_set) * epoch) // batch_size):

@@ -69,7 +69,7 @@ def setup_training_loop_kwargs(
     nobench    = None, # Disable cuDNN benchmarking: <bool>, default = False
     workers    = None, # Override number of DataLoader workers: <int>, default = 3
     
-    #add to name
+    # Visison-aided-gan training configs.
     cv         = None, # cv supervision on images
     warmup     = False, # warmup if training from scratch
     cv_loss    = None, # cv loss
@@ -78,10 +78,10 @@ def setup_training_loop_kwargs(
     appendname = None,
     ada_target_cv = 0.3, #target augmentation p for CV model
 
-    #miscellaneous 
+    # miscellaneous 
     wandb_log = False, 
     exact_resume  = 0,    # resume augmentation pipeline and optimizer 
-    cur_nimg = 0, #nimg from which resuming if exact resume=1
+    cur_nimg = 0,  #nimg from which resuming if exact resume=1
     clean = False, #FID clean or not
     wandb_resume = False,
 
@@ -604,6 +604,10 @@ def main(ctx, outdir, dry_run, **config_kwargs):
       multilevel: multi-level loss used in CLIP and DINO
       sigmoid_s: sidmoid loss with one sided label smoothing
       multilevel_s: multi level loss with one sided label smoothing
+
+     \b
+    Augmentation for computer vision model bsaed discriminator (--augcv):
+      can be either "ada" or "diffaug-policy" where policy is a comma separated augmentation list
 
     """
 
