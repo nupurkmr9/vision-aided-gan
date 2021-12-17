@@ -1,4 +1,4 @@
-# Vision-aided-GAN Training
+# Vision-aided GAN
 
 ### [video (3m)](https://youtu.be/oHdyJNdQ9E4) | [website](https://www.cs.cmu.edu/~vision-aided-gan/) |   [paper](https://arxiv.org/abs/2112.09130)
 <br>
@@ -146,9 +146,4 @@ Miscellaneous configurations:
 
 
 ## Acknowledgments
-
-Our codebase is built over [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch).
-
-<!-- ## ToDos
-- [ ] add a script for training with multiple models
- -->
+We thank Muyang Li, Sheng-Yu Wang, Chonghyuk (Andrew) Song for proofreading the draft. We are also grateful to Alexei A. Efros, Sheng-Yu Wang, Taesung Park, and William Peebles for helpful comments and discussion. Our codebase is built on [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch) and [ DiffAugment](https://github.com/mit-han-lab/data-efficient-gans).
