@@ -128,6 +128,6 @@ Miscellaneous configurations:
 
 Our codebase is built over [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch).
 
-## ToDos
+<!-- ## ToDos
 - [ ] add a script for training with multiple models
-
+ -->
