@@ -13,7 +13,9 @@ import legacy
 @click.pass_context
 @click.option('network_pkl', '--network', help='Network pickle filename or folder name if best model needs to be selected', metavar='PATH', required=True)
 @click.option('--data', help='Real sample dataset for model selection (directory or zip) [same as training data]', default='ffhq', required=True)
-def calc_importance(ctx, network_pkl, data, batch_size=64):
+@click.option('--batch', help='Override batch size', type=int, metavar='INT', default=64)
+
+def calc_importance(ctx, network_pkl, data, batch):
     dnnlib.util.Logger(should_flush=True)
     device = 'cuda'
 
@@ -74,37 +76,30 @@ def calc_importance(ctx, network_pkl, data, batch_size=64):
         avg_train_accuracy = []
         avg_val_accuracy = []
 
-        for num_evals in range(3):
+        for _ in range(3):
 
             training_set_kwargs = dnnlib.EasyDict(class_name='training.dataset.ImageFolderDataset',
                                                   path=data, use_labels=True, max_size=None, xflip=False)
             training_set = dnnlib.util.construct_class_by_name(**training_set_kwargs)
 
-            training_set_iterator = torch.utils.data.DataLoader(dataset=training_set, batch_size=batch_size, **data_loader_kwargs)
+            training_set_iterator = torch.utils.data.DataLoader(dataset=training_set, batch_size=batch, **data_loader_kwargs)
 
             feats = []
             label = []
-            epoch = 1
             with torch.no_grad():
-                for i in range(epoch):
-                    for counter, (val_img, val_c) in enumerate(training_set_iterator):
-                        val_img = (val_img.to(device).to(torch.float32) / 127.5 - 1.)
-                        val_feat = cv_pipe(val_img)
-                        feats.append(val_feat.cpu())
-                        label.append(np.ones(val_feat.size(0)))
-                        if val_img.size(2) == 1024:
-                            if len(feats) > 250:
-                                break
-                        else:
-                            if len(feats) > 1250:
-                                break
+                for _, (val_img, val_c) in enumerate(training_set_iterator):
+                    val_img = (val_img.to(device).to(torch.float32) / 127.5 - 1.)
+                    val_feat = cv_pipe(val_img)
+                    feats.append(val_feat.cpu())
+                    label.append(np.ones(val_feat.size(0)))
+                    if len(feats)*batch > 10000:
+                        break
 
             feats = torch.cat(feats, 0)
             label = np.concatenate(label, axis=0)
 
             shuffle = np.random.permutation(feats.size(0))
             feats = feats[shuffle]
-
             train_feats, val_feats = feats.chunk(2)
             train_label, val_label = label[:train_feats.size(0)], label[train_feats.size(0):]
             num_val_images = val_label.shape[0]
@@ -113,19 +108,14 @@ def calc_importance(ctx, network_pkl, data, batch_size=64):
             label = []
 
             with torch.no_grad():
-                for i in range((len(training_set) * epoch) // batch_size):
-                    z = torch.randn(batch_size, 512)
+                for i in range(len(training_set) // batch):
+                    z = torch.randn(batch, G_ema.z_dim)
                     val_img = G_ema(z.to(device), None)
                     val_feat = cv_pipe(val_img)
                     feats.append(val_feat.cpu())
                     label.append(np.zeros(val_feat.size(0)))
-
-                    if val_img.size(2) == 1024:
-                        if len(feats) > 250:
-                            break
-                    else:
-                        if len(feats) > 1250:
-                            break
+                    if len(feats)*batch > 10000:
+                        break
 
             feats = torch.cat(feats, 0)
             label = np.concatenate(label, axis=0)
@@ -166,6 +156,5 @@ def calc_importance(ctx, network_pkl, data, batch_size=64):
 
 # ----------------------------------------------------------------------------
 
-
 if __name__ == "__main__":
-    model_name = calc_importance()  # pylint: disable=no-value-for-parameter
+    model_name = calc_importance()

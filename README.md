@@ -54,7 +54,7 @@ Latent interpolation results of models trained with our method on AnimalFace Cat
 
 ```.bash
 git clone https://github.com/openai/CLIP.git
-mv vision-aided-gan/training/clip_model.py CLIP/clip/model.py
+cp vision-aided-gan/training/clip_model.py CLIP/clip/model.py
 cd CLIP
 python setup.py install
 ```
@@ -64,10 +64,10 @@ python setup.py install
 **[VGG-16](https://github.com/adobe/antialiased-cnns)**: model is automatically downloaded.
 
 
-**[Swin-T(MoBY)](https://github.com/SwinTransformer/Transformer-SSL)**: Create a "pretrained-models" directory and save the downloaded [model](https://drive.google.com/file/d/1PS1Q0tAnUfBWLRPxh9iUrinAxeq7Y--u/view?usp=sharing) there.
+**[Swin-T(MoBY)](https://github.com/SwinTransformer/Transformer-SSL)**: Create a `pretrained-models` directory and save the downloaded [model](https://drive.google.com/file/d/1PS1Q0tAnUfBWLRPxh9iUrinAxeq7Y--u/view?usp=sharing) there.
 
 
-**[Swin-T(Object Detection)](https://github.com/SwinTransformer/Swin-Transformer-Object-Detection)**: follow the below step for setup. Download the model [here](https://github.com/SwinTransformer/storage/releases/download/v1.0.1/upernet_swin_tiny_patch4_window7_512x512.pth) and save it in the "pretrained-models" directory.
+**[Swin-T(Object Detection)](https://github.com/SwinTransformer/Swin-Transformer-Object-Detection)**: follow the below step for setup. Download the model [here](https://github.com/SwinTransformer/storage/releases/download/v1.0.1/upernet_swin_tiny_patch4_window7_512x512.pth) and save it in the `pretrained-models` directory.
 ```.bash
 git clone https://github.com/SwinTransformer/Swin-Transformer-Object-Detection
 cd Swin-Transformer-Object-Detection
@@ -76,7 +76,7 @@ python setup.py install
 ```
 
 
-**[Swin-T(Segmentation)](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation)**: follow the below step for setup. Download the model [here](https://github.com/SwinTransformer/storage/releases/download/v1.0.2/cascade_mask_rcnn_swin_tiny_patch4_window7.pth) and save it in the "pretrained-models" directory.
+**[Swin-T(Segmentation)](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation)**: follow the below step for setup. Download the model [here](https://github.com/SwinTransformer/storage/releases/download/v1.0.2/cascade_mask_rcnn_swin_tiny_patch4_window7.pth) and save it in the `pretrained-models` directory.
 ```.bash
 git clone https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation.git
 cd Swin-Transformer-Semantic-Segmentation
@@ -84,9 +84,9 @@ remove assert statement from __init__.py
 python setup.py install
 ```
 
-**[Face Parsing](https://github.com/switchablenorms/CelebAMask-HQ)**:download the model [here](https://drive.google.com/file/d/1o1m-eT38zNCIFldcRaoWcLvvBtY8S4W3/view?usp=sharing) and save in the "pretrained-models" directory.
+**[Face Parsing](https://github.com/switchablenorms/CelebAMask-HQ)**:download the model [here](https://drive.google.com/file/d/1o1m-eT38zNCIFldcRaoWcLvvBtY8S4W3/view?usp=sharing) and save in the `pretrained-models` directory.
 
-**[Face Normals](https://github.com/boukhayma/face_normals)**:download the model [here](https://drive.google.com/file/d/1Qb7CZbM13Zpksa30ywjXEEHHDcVWHju_) and save in the "pretrained-models" directory.
+**[Face Normals](https://github.com/boukhayma/face_normals)**:download the model [here](https://drive.google.com/file/d/1Qb7CZbM13Zpksa30ywjXEEHHDcVWHju_) and save in the `pretrained-models` directory.
 
 ## Pretrained Models
 Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/)
