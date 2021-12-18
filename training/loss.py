@@ -80,7 +80,7 @@ class StyleGAN2Loss(Loss):
             if isinstance(self.augment_pipe_cv, str) and 'diffaug' in self.augment_pipe_cv:
                 img_cv = DiffAugment(img, policy=self.augment_pipe_cv.split('diffaug-')[1])
             elif self.augment_pipe_cv is not None:
-                img_cv = DiffAugment(self.augment_pipe_cv(img, prob = self.augment_pipe_cv.p[0] ), policy='cutout')
+                img_cv = DiffAugment(self.augment_pipe_cv(img, prob=self.augment_pipe_cv.p[0]), policy='cutout')
             else:
                 img_cv = img
 

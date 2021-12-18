@@ -4,7 +4,6 @@
 
 import torch
 import torch.nn.functional as F
-import functools
 
 def DiffAugment(x, policy='', channels_first=True):
     if policy:

@@ -1,5 +1,4 @@
-#code taken from https://github.com/boukhayma/face_normals
-
+#code from https://github.com/boukhayma/face_normals
 import copy
 import torch
 import torch.nn as nn

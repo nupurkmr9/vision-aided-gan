@@ -46,9 +46,7 @@ class StyleGAN2Loss(Loss):
         self.cv_type = cv_type
         self.DAux = DAux
         if self.cv_type is not None:
-            # self.aux_loss = dnnlib.util.construct_class_by_name(class_name='training.lossfn.' + cv_loss).to(device)    
-        
-            self.aux_loss = dnnlib.util.construct_class_by_name(class_name='training.lossfn.losses_list', loss_type = cv_loss).to(device)    
+            self.aux_loss = dnnlib.util.construct_class_by_name(class_name='training.lossfn.losses_list', loss_type=cv_loss).to(device)    
 
     def run_G(self, z, c, sync):
         with misc.ddp_sync(self.G_mapping, sync):
@@ -75,12 +73,12 @@ class StyleGAN2Loss(Loss):
         
         if self.cv_ensemble is not None:
             if isinstance(self.augment_pipe_cv, str) and 'diffaug' in self.augment_pipe_cv:
-                img_cv = [ DiffAugment(img, policy=self.augment_pipe_cv.split('diffaug-')[1]) 
-                             for i in range(int(self.cv_type.split('list')[1])) ] 
+                img_cv = [DiffAugment(img, policy=self.augment_pipe_cv.split('diffaug-')[1]) 
+                            for i in range(int(self.cv_type.split('list')[1]))] 
                
             elif self.augment_pipe_cv is not None:
-                img_cv = [ DiffAugment(self.augment_pipe_cv(img, prob=self.augment_pipe_cv.p[i]), policy='cutout' )
-                                 for i in range(int(self.cv_type.split('list')[1])) ]
+                img_cv = [DiffAugment(self.augment_pipe_cv(img, prob=self.augment_pipe_cv.p[i]), policy='cutout')
+                            for i in range(int(self.cv_type.split('list')[1]))]
             else:
                 img_cv = img1
               

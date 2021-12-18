@@ -1,3 +1,4 @@
+#code from https://github.com/boukhayma/face_normals
 import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo

@@ -6,6 +6,8 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
+# modified for "Ensembling Off-the-shelf Models for GAN Training"
+
 import numpy as np
 import scipy.signal
 import torch

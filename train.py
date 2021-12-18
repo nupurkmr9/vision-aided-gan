@@ -6,8 +6,7 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
-"""Train a GAN using the techniques described in the paper
-"Training Generative Adversarial Networks with Limited Data"."""
+# modified for "Ensembling Off-the-shelf Models for GAN Training"
 
 import os
 import click
@@ -574,7 +573,8 @@ def main(ctx, outdir, dry_run, **config_kwargs):
       model_name: clip, dino, seg_ade, det_coco, face_seg, face_normals, vgg, swin
       output_type: conv_multi_level for training (discriminator head is over the spatial features of pretrained model)
       output_type: pool for model selection (to enable linear classifier on the feature vector)
-      for multiple model training: input is - separated models, i.g. clip-dino-swin
+      for multiple model training: input is - separated models, i.g. clip-dino-swin; output is conv_multi_level_list<i> i = number of cv models. 
+
 
      \b
     Loss function for computer vision model bsaed discriminator (--cv-loss):

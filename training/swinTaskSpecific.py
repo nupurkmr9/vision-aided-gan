@@ -13,7 +13,7 @@ class Seg(torch.nn.Module):
         self.cv_type = cv_type
         
         if 'object' in self.cv_type:
-            self.model =  init_detector('../Swin-Transformer-Semantic-Segmentation/configs/swin/cascade_mask_rcnn_swin_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco.py.py', 
+            self.model =  init_detector('../Swin-Transformer-Object-Detection/configs/swin/cascade_mask_rcnn_swin_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco.py', 
                                    'pretrained-models/cascade_mask_rcnn_swin_tiny_patch4_window7.pth')
 
         else:
@@ -28,11 +28,10 @@ class Seg(torch.nn.Module):
         self.image_std = torch.tensor([0.229, 0.22399999999999998, 0.225])
         self.pool  = nn.AdaptiveAvgPool2d((1,1))
         
-    def __call__(self, image , return_features=False):
+    def __call__(self, image):
         image = F.interpolate(image*0.5+0.5, size=(256,256), mode='area')
         image -= self.image_mean[:, None, None].to(image.device)
         image /= self.image_std[:, None, None].to(image.device)
-
         if 'pool' in self.cv_type:
             seg_logit = self.model.backbone(image)[-1]
             seg_logit = self.pool(seg_logit).reshape(-1,768)

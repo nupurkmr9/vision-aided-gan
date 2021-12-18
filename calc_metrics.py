@@ -62,12 +62,11 @@ def subprocess_fn(rank, args, temp_dir):
             print(f'Calculating {metric}...')
         progress = metric_utils.ProgressMonitor(verbose=args.verbose)
         result_dict = metric_main.calc_metric(metric=metric, G=G, dataset_kwargs=args.dataset_kwargs,
-            num_gpus=args.num_gpus, rank=rank, device=device, progress=progress,num_gen = args.num_gen, clean=args.clean)
+            num_gpus=args.num_gpus, rank=rank, device=device, progress=progress, num_gen=args.num_gen, clean=args.clean)
         if 'nn_train' in metric:
             nn_images = result_dict['results']
             nn_images = nn_images['nn_images']
-            torchvision.utils.save_image( nn_images*0.5+0.5, os.path.join(args.run_dir, str(args.num_gen)+'_nn.jpg'), nrow = 11 )
-        
+            torchvision.utils.save_image(nn_images*0.5+0.5, os.path.join(args.run_dir, str(args.num_gen)+'_nn.jpg'), nrow=11)
         else:
             if rank == 0:
                 metric_main.report_metric(result_dict, run_dir=args.run_dir, snapshot_pkl=args.network_pkl)

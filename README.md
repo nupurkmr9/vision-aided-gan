@@ -71,16 +71,16 @@ python setup.py install
 ```.bash
 git clone https://github.com/SwinTransformer/Swin-Transformer-Object-Detection
 cd Swin-Transformer-Object-Detection
-pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
+pip install mmcv-full==1.3.0 -f https://download.openmmlab.com/mmcv/dist/cu111/torch1.8.0/index.html
 python setup.py install
 ```
 
+for more details on mmcv installation please refer [here](https://github.com/open-mmlab/mmdetection/blob/master/docs/en/get_started.md)
 
 **[Swin-T(Segmentation)](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation)**: follow the below step for setup. Download the model [here](https://github.com/SwinTransformer/storage/releases/download/v1.0.2/cascade_mask_rcnn_swin_tiny_patch4_window7.pth) and save it in the `pretrained-models` directory.
 ```.bash
 git clone https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation.git
 cd Swin-Transformer-Semantic-Segmentation
-remove assert statement from __init__.py
 python setup.py install
 ```
 

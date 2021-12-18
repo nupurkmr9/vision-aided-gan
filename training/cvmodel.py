@@ -41,7 +41,6 @@ class Swin(torch.nn.Module):
         )
 
         self.cv_type = cv_type
-
         self.model = timm.create_model('swin_tiny_patch4_window7_224')
         st = torch.load('pretrained-models/moby_swin_t_300ep_pretrained.pth', map_location='cpu')
         new_st = {}
@@ -132,22 +131,6 @@ class DINO(torch.nn.Module):
         self.image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073])
         self.image_std = torch.tensor([0.229, 0.224, 0.225])
        
-    def forward_custom(self, x, return_intermediate=False):
-        # See note [TorchScript super()]
-        x = self.model.conv1(x)
-        x = self.model.bn1(x)
-        x = self.model.relu(x)
-        x = self.model.maxpool(x)
-
-        x = self.model.layer1(x)
-        x1 = self.model.layer2(x)
-        x2 = self.model.layer3(x1)
-        x3 = self.model.layer4(x2)
-
-        if return_intermediate:
-            return [x1, x2, x3]
-        return x3
-    
     def __call__(self, image):
         image = F.interpolate(image*0.5+0.5, size=(224,224), mode='area')#, align_corners=True) 
         image = image - self.image_mean[:, None, None].to(image.device)

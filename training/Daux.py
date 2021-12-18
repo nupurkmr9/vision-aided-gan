@@ -20,7 +20,7 @@ class MultiLevelDViT(nn.Module):
 
         self.decoder1 = nn.ModuleList(self.decoder1)
         
-    def forward(self, input, return_feat=False):
+    def forward(self, input):
 
         final_pred = []
 
@@ -42,7 +42,7 @@ class SimpleD(nn.Module):
                                         FullyConnectedLayer(out_ch*out_size*out_size , 256, activation='lrelu'),
                                         FullyConnectedLayer(out_ch, 1 ))
         
-    def forward(self, input, return_feat=False):
+    def forward(self, input):
 
         return self.decoder(input)
 
@@ -56,7 +56,7 @@ class MLPD(nn.Module):
         self.decoder = nn.Sequential( FullyConnectedLayer(in_ch, out_ch, activation='lrelu'),
                                                   FullyConnectedLayer(out_ch, 1 )) 
         
-    def forward(self, input, return_feat=False):
+    def forward(self, input):
 
         return self.decoder(input)
 
@@ -86,7 +86,7 @@ class MultiLevelDConv(nn.Module):
 
         self.decoder1 = nn.ModuleList(self.decoder1)
         
-    def forward(self, input, return_feat=False):
+    def forward(self, input):
 
         final_pred = []
 
@@ -139,18 +139,12 @@ class DiscriminatorAux(torch.nn.Module):
 
             return decoder
 
-
-
-        #### CV conditional blocks ########
-        print("######## cv MODEL")
         self.decoder = []
         cv_lists = cv_type.split('input-')[1].split('-output-')[0].split('-')
         for each in cv_lists:
             self.decoder.append(get_decoder(each, cv_type))
 
-        self.decoder = nn.ModuleList(self.decoder)
-            
-    
+        self.decoder = nn.ModuleList(self.decoder)           
 
     def forward(self, cv_feat, c):
 
