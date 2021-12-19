@@ -36,11 +36,11 @@ def compute_fid(opts, max_real, num_gen):
         elif 'afhqwild' in opts.dataset_kwargs.path:
             score = fid.compute_fid(gen=gen, dataset_name="afhq_wild", dataset_res=512, mode="clean", dataset_split="train", batch_size=8)
         elif 'church' in opts.dataset_kwargs.path:
-            score = fid.compute_fid(gen=gen, dataset_name="church_full", dataset_res=256,  mode="clean", dataset_split="custom", batch_size=32)
+            score = fid.compute_fid(gen=gen, dataset_name="lsun_church", dataset_res=256,  mode="clean", dataset_split="trainfull", batch_size=32)
         elif 'cat' in opts.dataset_kwargs.path:
             score = fid.compute_fid(gen=gen, dataset_name="lsun_cat", dataset_res=256,  mode="clean", dataset_split="trainfull", batch_size=32)
         elif 'horse' in opts.dataset_kwargs.path:
-            score = fid.compute_fid(gen=gen, dataset_name="horse_full", dataset_res=256, mode="clean", dataset_split="custom", batch_size=64)
+            score = fid.compute_fid(gen=gen, dataset_name="lsun_horse", dataset_res=256, mode="clean", dataset_split="trainfull", batch_size=32)
         elif 'ffhq1024' in opts.dataset_kwargs.path:
             score = fid.compute_fid(gen=gen, dataset_name="ffhq", dataset_res=1024, mode="clean", dataset_split="trainval70k", batch_size=8)
         elif 'ffhq' in opts.dataset_kwargs.path:

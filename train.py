@@ -532,7 +532,7 @@ class CommaSeparatedList(click.ParamType):
 @click.option('--cv-loss', default= 'sigmoid_loss', help='CV loss', type=str) 
 @click.option('--augcv', help='Augmentation mode [default: None]', type=str)
 @click.option('--augpipecv', help='Augmentation pipeline [default: bgc if augcv ada]', type=str)
-@click.option('--ada-target-cv', default=0.1, help='Augmentation target probability', type=float)
+@click.option('--ada-target-cv', default=0.3, help='Augmentation target probability', type=float)
 @click.option('--exact-resume', help='0: only resume model weights, 1: resume model weights ensuring exact match and augpipe, 2: resume model weights, optimizer and augpipe', type=int, default=0, metavar='INT')
 
 # miscellaneous
@@ -573,16 +573,16 @@ def main(ctx, outdir, dry_run, **config_kwargs):
       model_name: clip, dino, seg_ade, det_coco, face_seg, face_normals, vgg, swin
       output_type: conv_multi_level for training (discriminator head is over the spatial features of pretrained model)
       output_type: pool for model selection (to enable linear classifier on the feature vector)
-      for multiple model training: input is - separated models, i.g. clip-dino-swin; output is conv_multi_level_list<i> i = number of cv models. 
+      for multiple model training: input is - separated models, i.e. clip-dino-swin; output is conv_multi_level_list<i> i = number of cv models. 
 
 
      \b
     Loss function for computer vision model bsaed discriminator (--cv-loss):
-      sigmoid: standard loss used in styleGAN2 training
+      sigmoid: standard loss used for all models except CLIP and DINO
       multilevel: multi-level loss used in CLIP and DINO
       sigmoid_s: sidmoid loss with one sided label smoothing
       multilevel_s: multi level loss with one sided label smoothing
-      for multiple model training:  is - separated models, i.g. clip-dino-swin
+      for multiple model training: loss is comma separated names, i.e. multilevel,sigmoid,sigmoid
 
      \b
     Augmentation for computer vision model bsaed discriminator (--augcv):
