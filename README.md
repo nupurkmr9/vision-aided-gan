@@ -23,7 +23,7 @@ arXiv 2112.09130, 2021
 
 ## Quantitative Comparison
 <img src="images/lsun_eval.jpg" width="800px"/><br>
-Our method outperforms recent GAN training methods by a large margin, especially in limited sample setting. For LSUN Cat, we achieve similar FID as StyleGAN2 trained on the full dataset using only $0.7\%$ of the dataset.  On the full dataset, our method improves FID by 1.5x to 2x on cat, church, and horse categories of LSUN.
+Our method outperforms recent GAN training methods by a large margin, especially in limited sample setting. For LSUN Cat, we achieve similar FID as StyleGAN2 trained on the full dataset using only 0.7\% of the dataset.  On the full dataset, our method improves FID by 1.5x to 2x on cat, church, and horse categories of LSUN.
 
 ## Example Results
 Below, we show visual comparisons between the baseline StyleGAN2-ADA and our model (Vision-aided GAN) for the
@@ -46,6 +46,44 @@ Latent interpolation results of models trained with our method on AnimalFace Cat
 * python libraries: see requirements.txt
 * StyleGAN2 code relies heavily on custom PyTorch extensions. For detail please refer to the repo [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch)
 
+
+
+## Pretrained Models
+Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/)
+
+**To generate images**: 
+
+```.bash
+python generate.py --outdir=out --trunc=1 --seeds=85,265,297,849 --network=<network.pkl>
+```
+The output is stored in `out` directory controlled by `--outdir`. Our generator architecture is same as styleGAN2 and can be similarly used in the Python code as described in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#using-networks-from-python).
+
+**model evaluation**:
+```.bash
+python calc_metrics.py --network <network.pkl> --metrics fid50k_full --data <dataset> --clean 1
+```
+We use [clean-fid](https://github.com/GaParmar/clean-fid) library to calculate FID metric. For LSUN Church and LSUN Horse, we calclate the full real distribution statistics. For details on calculating the real distribution statistics, please refer to [clean-fid](https://github.com/GaParmar/clean-fid).
+For default FID evaluation of StyleGAN2-ADA use `clean=0`. 
+
+## Datasets
+
+Dataset preparation is same as given in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#preparing-datasets).
+Example setup for LSUN Church
+
+
+**LSUN Church**
+```.bash
+git clone https://github.com/fyu/lsun.git
+cd lsun
+python3 download.py -c church_outdoor
+unzip church_outdoor_train_lmdb.zip
+cd ../vision-aided-gan
+python dataset_tool.py --source <path-to>/church_outdoor_train_lmdb/ --dest <path-to-datasets>/church1k.zip --max-images 1000  --transform=center-crop --width=256 --height=256
+```
+
+datasets can be downloaded from their repsective websites:
+
+[FFHQ](https://github.com/NVlabs/ffhq-dataset), [LSUN Categories](http://dl.yf.io/lsun/objects/), [AFHQ](https://github.com/clovaai/stargan-v2), [AnimalFace Dog](https://data-efficient-gans.mit.edu/datasets/AnimalFace-dog.zip), [AnimalFace Cat](https://data-efficient-gans.mit.edu/datasets/AnimalFace-cat.zip), [100-shot Bridge-of-Sighs](https://data-efficient-gans.mit.edu/datasets/100-shot-bridge_of_sighs.zip)
 
 ## Setting up Off-the-shelf Computer Vision models
 
@@ -88,42 +126,6 @@ python setup.py install
 
 **[Face Normals](https://github.com/boukhayma/face_normals)**:download the model [here](https://drive.google.com/file/d/1Qb7CZbM13Zpksa30ywjXEEHHDcVWHju_) and save in the `pretrained-models` directory.
 
-## Pretrained Models
-Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/)
-
-**To generate images**: 
-
-```.bash
-python generate.py --outdir=out --trunc=1 --seeds=85,265,297,849 --network=<network.pkl>
-```
-The output is stored in `out` directory controlled by `--outdir`. Our generator architecture is same as styleGAN2 and can be similarly used in the Python code as described in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#using-networks-from-python).
-
-**model evaluation**:
-```.bash
-python calc_metrics.py --network <network.pkl> --metrics fid50k_full --data <dataset> --clean 1
-```
-We use [clean-fid](https://github.com/GaParmar/clean-fid) library to calculate FID metric. For LSUN Church and LSUN Horse, we calclate the full real distribution statistics. For details on calculating the real distribution statistics, please refer to [clean-fid](https://github.com/GaParmar/clean-fid).
-For default FID evaluation of StyleGAN2-ADA use `clean=0`. 
-
-## Datasets
-
-Dataset preparation is same as given in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#preparing-datasets).
-Example setup for LSUN Church
-
-
-**LSUN Church**
-```.bash
-git clone https://github.com/fyu/lsun.git
-cd lsun
-python3 download.py -c church_outdoor
-unzip church_outdoor_train_lmdb.zip
-cd ../vision-aided-gan
-python dataset_tool.py --source <path-to>/church_outdoor_train_lmdb/ --dest <path-to-datasets>/church1k.zip --max-images 1000  --transform=center-crop --width=256 --height=256
-```
-
-datasets can be downloaded from their repsective websites:
-
-[FFHQ](https://github.com/NVlabs/ffhq-dataset), [LSUN Categories](http://dl.yf.io/lsun/objects/), [AFHQ](https://github.com/clovaai/stargan-v2), [AnimalFace Dog](https://data-efficient-gans.mit.edu/datasets/AnimalFace-dog.zip), [AnimalFace Cat](https://data-efficient-gans.mit.edu/datasets/AnimalFace-cat.zip), [100-shot Bridge-of-Sighs](https://data-efficient-gans.mit.edu/datasets/100-shot-bridge_of_sighs.zip)
 
 
 ## Training new networks
