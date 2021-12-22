@@ -93,7 +93,7 @@ conda create -n vgan python=3.8
 conda activate vgan
 git clone https://github.com/nupurkmr9/vision-aided-gan.git
 cd vision-aided-gan
-bash 
+bash scripts/setup.sh
 ```
 
 
