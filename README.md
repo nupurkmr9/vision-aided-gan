@@ -39,7 +39,7 @@ Latent interpolation results of models trained with our method on AnimalFace Cat
 <img src="images/interp.gif" width="800px"/><br>
 
 ## Worst sample visualzation
-We randomly sample 5k images and sort them according to Mahalanobis distance using mean and variance of real samples calculated in inception feature space. Below visualization shows the bottom 30 images according to the distance for StyleGAN2-ADA and our model.
+We randomly sample 5k images and sort them according to Mahalanobis distance using mean and variance of real samples calculated in inception feature space. Below visualization shows the bottom 30 images according to the distance for StyleGAN2-ADA (left) and our model (right).
 
 <details open><summary>AFHQ Dog</summary>
 <p>
