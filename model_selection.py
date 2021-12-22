@@ -3,21 +3,22 @@ import torch
 import os
 import glob
 import json
+import argparse
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 import dnnlib
 import legacy
 
 
-@click.command()
-@click.pass_context
-@click.option('network_pkl', '--network', help='Network pickle filename or folder name if best model needs to be selected', metavar='PATH', required=True)
-@click.option('--data', help='Real sample dataset for model selection (directory or zip) [same as training data]', default='ffhq', required=True)
-@click.option('--batch', help='Override batch size', type=int, metavar='INT', default=64)
+def parse_args():
+    parser = argparse.ArgumentParser("vision-aided-gan",)
+    parser.add_argument("--network", type=str, help='Network pickle filename or folder name if best model needs to be selected', required=True)
+    parser.add_argument("--data", type=str, help='Real sample dataset for model selection (directory or zip) [same as training data]', required=True)
+    parser.add_argument("--batch", type=int, default=64, help='Override batch size')
+    return parser.parse_args()
 
-def calc_importance(ctx, network_pkl, data, batch):
+def calc_importance(network_pkl, data, batch, cv_models_list=None, device='cuda'):
     dnnlib.util.Logger(should_flush=True)
-    device = 'cuda'
 
     if '.pkl' not in network_pkl:  # rundir given and get the best model from that rundir
         metricfile = glob.glob(os.path.join(network_pkl, 'metric-fid*'))[0]
@@ -43,22 +44,23 @@ def calc_importance(ctx, network_pkl, data, batch):
 
     G_ema = G_ema.to(device)
 
-    cv_list = [
-        'input-swin-output-pool',
-        'input-clip-output-pool',
-        'input-dino-output-pool',
-        'input-vgg-output-pool',
-        'input-seg_ade-output-feat_pool',
-        'input-det_coco-output-object_feat_pool',
-        'input-face_parsing-output-pool',
-        'input-face_normals-output-pool',
-    ]
+    if cv_models_list is None:
+        cv_models_list = [
+            'input-swin-output-pool',
+            'input-clip-output-pool',
+            'input-dino-output-pool',
+            'input-vgg-output-pool',
+            'input-seg_ade-output-feat_pool',
+            'input-det_coco-output-object_feat_pool',
+            'input-face_parsing-output-pool',
+            'input-face_normals-output-pool',
+        ]
 
     data_loader_kwargs = {'pin_memory': True, 'num_workers': 1, 'prefetch_factor': 2}
 
     metrics = {}
 
-    for cv in cv_list:
+    for cv in cv_models_list:
 
         metrics[cv] = {}
         print("$$$$$$$$$$$$$$$$", cv, "$$$$$$$$$$$$$$$$")
@@ -147,14 +149,15 @@ def calc_importance(ctx, network_pkl, data, batch):
                                  }
 
     linear_probe_acc = [metrics[x]['linear']['val'] for x in metrics.keys()]
-    cv_model_list = list(metrics.keys())
+    cv_models_list = list(metrics.keys())
 
     print(metrics)
 
-    print("selected model is:", cv_model_list[np.argmax(linear_probe_acc)], np.max(linear_probe_acc))
-    return cv_model_list[np.argmax(linear_probe_acc)]
+    print("selected model is:", cv_models_list[np.argmax(linear_probe_acc)], np.max(linear_probe_acc))
+    return cv_models_list[np.argmax(linear_probe_acc)], np.max(linear_probe_acc), network_pkl
 
 # ----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    model_name = calc_importance()
+    args = parse_args()
+    model_name, acc, network_pkl = calc_importance(args.network, args.data, args.batch)

@@ -46,6 +46,14 @@ Latent interpolation results of models trained with our method on AnimalFace Cat
 * python libraries: see requirements.txt
 * StyleGAN2 code relies heavily on custom PyTorch extensions. For detail please refer to the repo [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch)
 
+To setup conda env with all requirements and pretrained networks run the following command:
+```.bash
+conda create -n vgan python=3.8
+conda activate vgan
+git clone https://github.com/nupurkmr9/vision-aided-gan.git
+cd vision-aided-gan
+bash scripts/setup.sh
+```
 
 
 ## Pretrained Models
@@ -62,7 +70,7 @@ The output is stored in `out` directory controlled by `--outdir`. Our generator 
 ```.bash
 python calc_metrics.py --network <network.pkl> --metrics fid50k_full --data <dataset> --clean 1
 ```
-We use [clean-fid](https://github.com/GaParmar/clean-fid) library to calculate FID metric. For LSUN Church and LSUN Horse, we calclate the full real distribution statistics. For details on calculating the real distribution statistics, please refer to [clean-fid](https://github.com/GaParmar/clean-fid).
+We use [clean-fid](https://github.com/GaParmar/clean-fid) library to calculate FID metric. We calclate the full real distribution statistics for FID calculation. For details on calculating the statistics, please refer to [clean-fid](https://github.com/GaParmar/clean-fid).
 For default FID evaluation of StyleGAN2-ADA use `clean=0`. 
 
 ## Datasets
@@ -87,6 +95,7 @@ datasets can be downloaded from their repsective websites:
 
 ## Setting up Off-the-shelf Computer Vision models
 
+To individually setup each model:
 
 **[CLIP(ViT)](https://github.com/openai/CLIP)**: we modify the model.py function to return intermediate features of the transformer model. To set up follow these steps.
 
@@ -109,7 +118,7 @@ python setup.py install
 ```.bash
 git clone https://github.com/SwinTransformer/Swin-Transformer-Object-Detection
 cd Swin-Transformer-Object-Detection
-pip install mmcv-full==1.3.0 -f https://download.openmmlab.com/mmcv/dist/cu111/torch1.8.0/index.html
+pip install mmcv-full==1.3.0 -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
 python setup.py install
 ```
 
@@ -136,10 +145,10 @@ python setup.py install
 python model_selection.py --data mydataset.zip --network  <mynetworkfolder or mynetworkpklfile>
 ```
 
-**example training command for training with a single pretrained network from scratch**
+**vision-aided-gan training with a single pretrained network from scratch**
 
 ```.bash
-python train.py --outdir=training-models/ --data=mydataset.zip --gpus 2 --metrics fid50k_full --kimg 25000 --cfg paper256 --cv input-dino-output-conv_multi_level --cv-loss multilevel_s --augcv ada --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --warmup 1  
+python train.py --outdir models/ --data mydataset.zip --gpus 2 --metrics fid50k_full --kimg 25000 --cfg paper256 --cv input-dino-output-conv_multi_level --cv-loss multilevel_s --augcv ada --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --warmup 1  
 ```
 
 Training configuration corresponding to training with vision-aided-loss:
@@ -148,18 +157,35 @@ Training configuration corresponding to training with vision-aided-loss:
 * `--warmup=0` should be enabled when training from scratch. Introduces our loss after training with 500k images.
 * `--cv-loss=multilevel` what loss to use on pretrained model based discriminator.
 * `--augcv=ada` performs ADA augmentation on pretrained model based discriminator.
-* `--augcv=diffaugment-<policy>` performs DiffAugment on pretrained model based discriminator with given poilcy.
+* `--augcv=diffaugment-<policy>` performs DiffAugment on pretrained model based discriminator with given poilcy e.g. `color,translation,cutout`
 * `--augpipecv=bgc` ADA augmentation strategy. Note: cutout is always enabled. 
 * `--ada-target-cv=0.3` adjusts ADA target value for pretrained model based discriminator.
-* `--exact-resume=0` enables exact resume along with optimizer state.
+* `--exact-resume=1` enables exact resume along with optimizer state. default is 0.
 
+StyleGAN2 configurations:
+* `--outdir='models/'` directory to save training runs.
+* `--data` data directory created after running `dataset_tool.py`.
+* `--metrics=fid50kfull` evaluates FID calculation during training at every `snap` iterations. `fid5kfull` can be used for lower time. 
+* `--cfg=paper256` architecture and hyperparameter configuration for G and D. 
+* `--mirror=1` enables horizontal flipping
+* `--aug=ada` enables ADA augmentation in trainable D. 
+* `--diffaugment=color,translation,cutout` enables DiffAugment in trainable D.
+* `--augpipe=bgc` ADA augmentation strategy in trainable D.
+* `--snap=25` evaluation and model saving interval
 
 Miscellaneous configurations:
 * `--appendname=''` additional string to append to training directory name.
-* `--wandb-log=0` enables wandb logging.
-* `--clean=0` enables FID calculation using [clean-fid](https://github.com/GaParmar/clean-fid) if the real distribution statistics are pre-calculated.
+* `--wandb-log=1` enables wandb logging.
+* `--clean=1` enables FID calculation using [clean-fid](https://github.com/GaParmar/clean-fid) if the real distribution statistics are pre-calculated. default is false.
 
 Run `python train.py --help` for more details and the full list of args.
+
+
+**Progressive vision-aided-gan training with 3 pretrained networks**:
+```.bash
+python scripts/vision-aided-gan-3.py --cmd "python train.py --outdir models/ --data mydataset.zip --gpus 2 --metrics fid50k_full --cfg paper256 --augcv ada --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --resume <stylegan2-baseline.pkl>" --kimgs-list '4000,1000,1000'  
+```
+We autoamtically select the best model out of the set of pretrained models for training. `--kimgs-list` controls the number of iterations after which next model is added. It is a comma separated list of iteration numbers. For fine-tuning a baseline trained model `<stylegan2-baseline.pkl>` on dataset with training samples >1k, initialize `--kimgs-list` to '8000,2000,2000'. 
 
 ## References
 
