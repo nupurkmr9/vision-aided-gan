@@ -38,6 +38,47 @@ Latent interpolation results of models trained with our method on AnimalFace Cat
 
 <img src="images/interp.gif" width="800px"/><br>
 
+## Worst sample visualzation
+We randomly sample 5k images and sort them according to Mahalanobis distance using mean and variance of real samples calculated in inception feature space. Below visualization shows the bottom 30 images according to the distance for StyleGAN2-ADA and our model.
+
+<details open><summary>AFHQ Dog</summary>
+<p>
+<div class="images">
+ <table width=500>
+  <tr>
+    <td valign="top"><img src="images/afhqdog_worst_baseline.png"/></td>
+    <td valign="top"><img src="images/afhqdog_worst_ours.png"/></td>
+  </tr>
+</table>
+</div>
+</p>
+</details>
+
+<details><summary>AFHQ Cat</summary>
+<p>
+<div class="images">
+ <table>
+  <tr>
+    <td valign="top"><img src="images/afhqcat_worst_baseline.png"/></td>
+    <td valign="top"><img src="images/afhqcat_worst_ours.png"/></td>
+  </tr>
+</table>
+</div>
+</p>
+</details>
+
+<details><summary>AFHQ Wild</summary>
+<p>
+<div class="images">
+ <table>
+  <tr>
+    <td valign="top"><img src="images/afhqwild_worst_baseline.png"/></td>
+    <td valign="top"><img src="images/afhqwild_worst_ours.png"/></td>
+  </tr>
+</table>
+</div>
+</p>
+</details>
 
 ## Requirements
 
@@ -52,7 +93,7 @@ conda create -n vgan python=3.8
 conda activate vgan
 git clone https://github.com/nupurkmr9/vision-aided-gan.git
 cd vision-aided-gan
-bash scripts/setup.sh
+bash 
 ```
 
 
@@ -95,9 +136,9 @@ datasets can be downloaded from their repsective websites:
 
 ## Setting up Off-the-shelf Computer Vision models
 
-To individually setup each model:
+If `scripts/setup.sh` not used, individually setup each model by following the below steps:
 
-**[CLIP(ViT)](https://github.com/openai/CLIP)**: we modify the model.py function to return intermediate features of the transformer model. To set up follow these steps.
+**[CLIP(ViT)](https://github.com/openai/CLIP)**: we modify the model.py function to return intermediate features of the transformer model. 
 
 ```.bash
 git clone https://github.com/openai/CLIP.git
