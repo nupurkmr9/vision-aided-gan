@@ -212,7 +212,7 @@ def training_loop(
         with dnnlib.util.open_url(resume_pkl) as f:
             resume_data = legacy.load_network_pkl(f)
         modules_restore = [('G', G), ('D',D),('G_ema', G_ema),]
-        if cv_ensemble is not None and 'DAux' in resume_data:
+        if cv_ensemble is not None and 'DAux' in resume_data and resume_data['DAux'] is not None:
             modules_restore.append(('DAux', DAux))
         for name, module in modules_restore: 
             if exact_resume == 1:
@@ -512,7 +512,8 @@ def training_loop(
                 del module # conserve memory
             for phase in phases:
                 snapshot_data[phase.name] = copy.deepcopy(phase.opt.state_dict())
-            snapshot_data[phaseDAux.name] = copy.deepcopy(phaseDAux.opt.state_dict())
+            if DAux is not None:
+                snapshot_data[phaseDAux.name] = copy.deepcopy(phaseDAux.opt.state_dict())
                 
             snapshot_pkl = os.path.join(run_dir, f'network-snapshot-{cur_nimg//1000:06d}.pkl')
             if rank == 0:

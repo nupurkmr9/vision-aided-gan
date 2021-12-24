@@ -158,10 +158,10 @@ class CVWrapper(torch.nn.Module):
         cv_lists = cv_type.split('input-')[1].split('-output-')[0].split('-')
         output = cv_type.split('output-')[1]
         class_name_dict = {
-                'seg_ade': 'training.swinTaskSpecific.Seg',
-                'det_coco': 'training.swinTaskSpecific.Seg',
-                'face_parsing': 'training.face_parsing.Parsing',
-                'face_normals': 'training.face_normals.Normals',
+                'seg_ade': 'training.cv_swintaskspecific.Seg',
+                'det_coco': 'training.cv_swintaskspecific.Seg',
+                'face_parsing': 'training.cv_face_parsing.Parsing',
+                'face_normals': 'training.cv_face_normals.Normals',
                 'clip': 'training.cvmodel.CLIP',
                 'dino': 'training.cvmodel.DINO',
                 'vgg':'training.cvmodel.Vgg',

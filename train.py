@@ -500,7 +500,7 @@ class CommaSeparatedList(click.ParamType):
 @click.option('--mirror', help='Enable dataset x-flips [default: false]', type=bool, metavar='BOOL')
 
 # Base config.
-@click.option('--cfg', help='Base config [default: auto]', type=click.Choice(['auto', 'stylegan2', 'paper256', 'paper512', 'paper1024', 'cifar','ffhq1k','ffhq1k_2map', 'ffhq1k_2mapping','ffhq1k_projmapping']))
+@click.option('--cfg', help='Base config [default: auto]', type=click.Choice(['auto', 'stylegan2', 'paper256', 'paper256_2fmap', 'paper512', 'paper1024', 'cifar']))
 @click.option('--gamma', help='Override R1 gamma', type=float)
 @click.option('--pl-weight', help='Override G path regularization', type=float)
 @click.option('--g-reg-interval', help='lazy regularization G interval', type=int, metavar='INT')
@@ -513,7 +513,7 @@ class CommaSeparatedList(click.ParamType):
 @click.option('--aug', help='Augmentation mode [default: ada]', type=click.Choice(['noaug', 'ada', 'fixed']))
 @click.option('--p', help='Augmentation probability for --aug=fixed', type=float)
 @click.option('--target', help='ADA target value for --aug=ada', type=float)
-@click.option('--augpipe', help='Augmentation pipeline [default: bgc]', type=click.Choice(['bgc_cv_rotate','blit', 'geom', 'color', 'filter', 'noise', 'cutout', 'bg', 'bgc', 'bgc_norot', 'bgc_notrot', 'bgcf', 'bgcfn', 'bgcfnc','bgc_spade','bgc_seg', 'bgc_con']))
+@click.option('--augpipe', help='Augmentation pipeline [default: bgc]', type=click.Choice(['blit', 'geom', 'color', 'filter', 'noise', 'cutout', 'bg', 'bgc', 'bgcf', 'bgcfn', 'bgcfnc']))
 
 # Transfer learning.
 @click.option('--resume', help='Resume training [default: noresume]', metavar='PKL')

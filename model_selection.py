@@ -22,7 +22,7 @@ def calc_importance(network_pkl, data, batch, cv_models_list=None, device='cuda'
 
     if '.pkl' not in network_pkl:  # rundir given and get the best model from that rundir
         metricfile = glob.glob(os.path.join(network_pkl, 'metric-fid*'))[0]
-        metric = open(os.path.join(network_pkl, metricfile), 'r')
+        metric = open(metricfile, 'r')
         metric = metric.readlines()
         best_snapshot_fid = 500.
         for each in metric:

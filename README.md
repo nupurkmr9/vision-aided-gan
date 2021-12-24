@@ -15,8 +15,6 @@ Can the collective *knowledge* from a large bank of pretrained vision models be 
 We find that pretrained computer vision models can significantly improve performance when used in an ensemble of discriminators.  We propose an effective selection mechanism, by probing the linear separability between real and fake samples in pretrained model embeddings, choosing the most accurate model, and progressively adding it to the discriminator ensemble. Our method can improve GAN training in both limited data and large-scale settings.
 
 
-
-
 Ensembling Off-the-shelf Models for GAN Training <br>
 [Nupur Kumari](https://nupurkmr9.github.io/), [Richard Zhang](https://richzhang.github.io/), [Eli Shechtman](https://research.adobe.com/person/eli-shechtman/), [Jun-Yan Zhu](https://www.cs.cmu.edu/~junyanz/)<br>
 arXiv 2112.09130, 2021
@@ -46,8 +44,8 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 <div class="images">
  <table width=500>
   <tr>
-    <td valign="top"><img src="images/afhqdog_worst_baseline.png"/></td>
-    <td valign="top"><img src="images/afhqdog_worst_ours.png"/></td>
+    <td valign="top"><img src="images/afhqdog_worst_baseline.jpg"/></td>
+    <td valign="top"><img src="images/afhqdog_worst_ours.jpg"/></td>
   </tr>
 </table>
 </div>
@@ -59,8 +57,8 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 <div class="images">
  <table>
   <tr>
-    <td valign="top"><img src="images/afhqcat_worst_baseline.png"/></td>
-    <td valign="top"><img src="images/afhqcat_worst_ours.png"/></td>
+    <td valign="top"><img src="images/afhqcat_worst_baseline.jpg"/></td>
+    <td valign="top"><img src="images/afhqcat_worst_ours.jpg"/></td>
   </tr>
 </table>
 </div>
@@ -72,8 +70,8 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 <div class="images">
  <table>
   <tr>
-    <td valign="top"><img src="images/afhqwild_worst_baseline.png"/></td>
-    <td valign="top"><img src="images/afhqwild_worst_ours.png"/></td>
+    <td valign="top"><img src="images/afhqwild_worst_baseline.jpg"/></td>
+    <td valign="top"><img src="images/afhqwild_worst_ours.jpg"/></td>
   </tr>
 </table>
 </div>
@@ -93,9 +91,10 @@ conda create -n vgan python=3.8
 conda activate vgan
 git clone https://github.com/nupurkmr9/vision-aided-gan.git
 cd vision-aided-gan
-bash 
+bash scripts/setup.sh
 ```
 
+For details on off-the-shelf models please see [MODELS.md](MODELS.md)
 
 ## Pretrained Models
 Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/)
@@ -114,71 +113,48 @@ python calc_metrics.py --network <network.pkl> --metrics fid50k_full --data <dat
 We use [clean-fid](https://github.com/GaParmar/clean-fid) library to calculate FID metric. We calclate the full real distribution statistics for FID calculation. For details on calculating the statistics, please refer to [clean-fid](https://github.com/GaParmar/clean-fid).
 For default FID evaluation of StyleGAN2-ADA use `clean=0`. 
 
+
 ## Datasets
 
 Dataset preparation is same as given in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#preparing-datasets).
-Example setup for LSUN Church
+Example setup for 100-shot AnimalFace Dog and LSUN Church
 
+**AnimalFace Dog**
+```.bash
+mkdir datasets
+wget https://data-efficient-gans.mit.edu/datasets/AnimalFace-dog.zip -P datasets
+```
 
 **LSUN Church**
 ```.bash
+cd ..
 git clone https://github.com/fyu/lsun.git
 cd lsun
 python3 download.py -c church_outdoor
 unzip church_outdoor_train_lmdb.zip
 cd ../vision-aided-gan
-python dataset_tool.py --source <path-to>/church_outdoor_train_lmdb/ --dest <path-to-datasets>/church1k.zip --max-images 1000  --transform=center-crop --width=256 --height=256
+mkdir datasets
+python dataset_tool.py --source ../lsun/church_outdoor_train_lmdb/ --dest datasets/church1k.zip --max-images 1000  --transform=center-crop --width=256 --height=256
 ```
 
 datasets can be downloaded from their repsective websites:
 
 [FFHQ](https://github.com/NVlabs/ffhq-dataset), [LSUN Categories](http://dl.yf.io/lsun/objects/), [AFHQ](https://github.com/clovaai/stargan-v2), [AnimalFace Dog](https://data-efficient-gans.mit.edu/datasets/AnimalFace-dog.zip), [AnimalFace Cat](https://data-efficient-gans.mit.edu/datasets/AnimalFace-cat.zip), [100-shot Bridge-of-Sighs](https://data-efficient-gans.mit.edu/datasets/100-shot-bridge_of_sighs.zip)
 
-## Setting up Off-the-shelf Computer Vision models
-
-If `scripts/setup.sh` not used, individually setup each model by following the below steps:
-
-**[CLIP(ViT)](https://github.com/openai/CLIP)**: we modify the model.py function to return intermediate features of the transformer model. 
-
-```.bash
-git clone https://github.com/openai/CLIP.git
-cp vision-aided-gan/training/clip_model.py CLIP/clip/model.py
-cd CLIP
-python setup.py install
-```
-
-**[DINO(ViT)](https://github.com/facebookresearch/dino)**: model is automatically downloaded from torch hub.
-
-**[VGG-16](https://github.com/adobe/antialiased-cnns)**: model is automatically downloaded.
-
-
-**[Swin-T(MoBY)](https://github.com/SwinTransformer/Transformer-SSL)**: Create a `pretrained-models` directory and save the downloaded [model](https://drive.google.com/file/d/1PS1Q0tAnUfBWLRPxh9iUrinAxeq7Y--u/view?usp=sharing) there.
-
-
-**[Swin-T(Object Detection)](https://github.com/SwinTransformer/Swin-Transformer-Object-Detection)**: follow the below step for setup. Download the model [here](https://github.com/SwinTransformer/storage/releases/download/v1.0.1/upernet_swin_tiny_patch4_window7_512x512.pth) and save it in the `pretrained-models` directory.
-```.bash
-git clone https://github.com/SwinTransformer/Swin-Transformer-Object-Detection
-cd Swin-Transformer-Object-Detection
-pip install mmcv-full==1.3.0 -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
-python setup.py install
-```
-
-for more details on mmcv installation please refer [here](https://github.com/open-mmlab/mmdetection/blob/master/docs/en/get_started.md)
-
-**[Swin-T(Segmentation)](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation)**: follow the below step for setup. Download the model [here](https://github.com/SwinTransformer/storage/releases/download/v1.0.2/cascade_mask_rcnn_swin_tiny_patch4_window7.pth) and save it in the `pretrained-models` directory.
-```.bash
-git clone https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation.git
-cd Swin-Transformer-Semantic-Segmentation
-python setup.py install
-```
-
-**[Face Parsing](https://github.com/switchablenorms/CelebAMask-HQ)**:download the model [here](https://drive.google.com/file/d/1o1m-eT38zNCIFldcRaoWcLvvBtY8S4W3/view?usp=sharing) and save in the `pretrained-models` directory.
-
-**[Face Normals](https://github.com/boukhayma/face_normals)**:download the model [here](https://drive.google.com/file/d/1Qb7CZbM13Zpksa30ywjXEEHHDcVWHju_) and save in the `pretrained-models` directory.
-
-
 
 ## Training new networks
+
+**Example command for Vision-aided GAN training with multiple pretrained networks**:
+```.bash
+python scripts/vision-aided-gan.py --cmd "python train.py --outdir models/ --data datasets/AnimalFace-dog.zip --gpus 2 --metrics fid50k_full --cfg paper256_2fmap --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25" --cv-args "--augcv ada --ada-target-cv 0.3 --augpipecv bgc"  --kimgs-list '1000,1000,1000'  --num 3
+```
+We autoamtically select the best model out of the set of pretrained models for training. If fine-tuning a baseline trained model add `--resume <stylegan2-baseline.pkl>` in `--cmd` arg. `--kimgs-list` controls the number of iterations after which next model is added. It is a comma separated list of iteration numbers. For dataset with training samples 1k, we initialize `--kimgs-list` to '4000,1000,1000', and for training samples >1k `--kimgs-list` is '8000,2000,2000'.
+
+**Vision-aided Gan training with a specific pretrained network without model selection**
+
+```.bash
+python train.py --outdir models/ --data datasets/AnimalFace-dog.zip --gpus 2 --metrics fid50k_full --kimg 25000 --cfg paper256_2fmap --cv input-dino-output-conv_multi_level --cv-loss multilevel_s --augcv ada --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --warmup 1  
+```
 
 **model selection**: returns the computer vision model with highest linear probe accuracy for the best FID model in a folder or the given network file.
 
@@ -186,13 +162,14 @@ python setup.py install
 python model_selection.py --data mydataset.zip --network  <mynetworkfolder or mynetworkpklfile>
 ```
 
-**vision-aided-gan training with a single pretrained network from scratch**
+**To add you own pretrained Model**:
+create the class file to extract pretrained features inside `training` folder. Add the class path in the `class_name_dict` in `training.cvmodel.CVWrapper` class. Update the architecture of trainable classifier head over pretrained features in `training\Daux.py`.
 
-```.bash
-python train.py --outdir models/ --data mydataset.zip --gpus 2 --metrics fid50k_full --kimg 25000 --cfg paper256 --cv input-dino-output-conv_multi_level --cv-loss multilevel_s --augcv ada --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --warmup 1  
-```
 
-Training configuration corresponding to training with vision-aided-loss:
+
+<details ><summary> <b>Training configuration details</b> </summary> 
+
+Training configuration corresponding to training with our loss:
 
 * `--cv=input-dino-output-conv_multi_level` pretrained network and its configuration.
 * `--warmup=0` should be enabled when training from scratch. Introduces our loss after training with 500k images.
@@ -220,13 +197,8 @@ Miscellaneous configurations:
 * `--clean=1` enables FID calculation using [clean-fid](https://github.com/GaParmar/clean-fid) if the real distribution statistics are pre-calculated. default is false.
 
 Run `python train.py --help` for more details and the full list of args.
+</details>
 
-
-**Progressive vision-aided-gan training with 3 pretrained networks**:
-```.bash
-python scripts/vision-aided-gan-3.py --cmd "python train.py --outdir models/ --data mydataset.zip --gpus 2 --metrics fid50k_full --cfg paper256 --augcv ada --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --resume <stylegan2-baseline.pkl>" --kimgs-list '4000,1000,1000'  
-```
-We autoamtically select the best model out of the set of pretrained models for training. `--kimgs-list` controls the number of iterations after which next model is added. It is a comma separated list of iteration numbers. For fine-tuning a baseline trained model `<stylegan2-baseline.pkl>` on dataset with training samples >1k, initialize `--kimgs-list` to '8000,2000,2000'. 
 
 ## References
 

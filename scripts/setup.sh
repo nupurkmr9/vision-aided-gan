@@ -4,7 +4,7 @@ pip install -r requirements.txt
 ##CLIP###
 cd ..
 git clone https://github.com/openai/CLIP.git
-cp vision-aided-gan/training/clip_model.py CLIP/clip/model.py
+cp vision-aided-gan/training/cv_clip_model.py CLIP/clip/model.py
 cd CLIP
 python setup.py install
 
