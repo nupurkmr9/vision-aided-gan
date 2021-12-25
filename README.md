@@ -137,7 +137,7 @@ mkdir datasets
 python dataset_tool.py --source ../lsun/church_outdoor_train_lmdb/ --dest datasets/church1k.zip --max-images 1000  --transform=center-crop --width=256 --height=256
 ```
 
-datasets can be downloaded from their repsective websites:
+All other datasets can be downloaded from their repsective websites:
 
 [FFHQ](https://github.com/NVlabs/ffhq-dataset), [LSUN Categories](http://dl.yf.io/lsun/objects/), [AFHQ](https://github.com/clovaai/stargan-v2), [AnimalFace Dog](https://data-efficient-gans.mit.edu/datasets/AnimalFace-dog.zip), [AnimalFace Cat](https://data-efficient-gans.mit.edu/datasets/AnimalFace-cat.zip), [100-shot Bridge-of-Sighs](https://data-efficient-gans.mit.edu/datasets/100-shot-bridge_of_sighs.zip)
 
@@ -146,14 +146,18 @@ datasets can be downloaded from their repsective websites:
 
 **Example command for Vision-aided GAN training with multiple pretrained networks**:
 ```.bash
-python scripts/vision-aided-gan.py --cmd "python train.py --outdir models/ --data datasets/AnimalFace-dog.zip --gpus 2 --metrics fid50k_full --cfg paper256_2fmap --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25" --cv-args "--augcv ada --ada-target-cv 0.3 --augpipecv bgc"  --kimgs-list '1000,1000,1000'  --num 3
+python scripts/vision-aided-gan.py --cmd "python train.py --outdir models/ --data datasets/AnimalFace-dog.zip \
+  --gpus 2 --metrics fid50k_full --cfg paper256_2fmap  --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25" \
+  --cv-args "--augcv ada --ada-target-cv 0.3 --augpipecv bgc"  --kimgs-list '1000,1000,1000'  --num 3
 ```
-We autoamtically select the best model out of the set of pretrained models for training. If fine-tuning a baseline trained model add `--resume <stylegan2-baseline.pkl>` in `--cmd` arg. `--kimgs-list` controls the number of iterations after which next model is added. It is a comma separated list of iteration numbers. For dataset with training samples 1k, we initialize `--kimgs-list` to '4000,1000,1000', and for training samples >1k `--kimgs-list` is '8000,2000,2000'.
+We autoamtically select the best model out of the set of pretrained models for training. If fine-tuning a baseline trained model include `--resume <stylegan2-baseline.pkl>` in `--cmd` argument. `--kimgs-list` controls the number of iterations after which next model is added. It is a comma separated list of iteration numbers. For dataset with training samples 1k, we initialize `--kimgs-list` to '4000,1000,1000', and for training samples >1k `--kimgs-list` is '8000,2000,2000'.
 
 **Vision-aided Gan training with a specific pretrained network without model selection**
 
 ```.bash
-python train.py --outdir models/ --data datasets/AnimalFace-dog.zip --gpus 2 --metrics fid50k_full --kimg 25000 --cfg paper256_2fmap --cv input-dino-output-conv_multi_level --cv-loss multilevel_s --augcv ada --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --warmup 1  
+python train.py --outdir models/ --data datasets/AnimalFace-dog.zip --gpus 2 --metrics fid50k_full --kimg 25000 \
+  --cfg paper256_2fmap --cv input-dino-output-conv_multi_level --cv-loss multilevel_s --augcv ada \
+  --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --warmup 1  
 ```
 
 **model selection**: returns the computer vision model with highest linear probe accuracy for the best FID model in a folder or the given network file.
