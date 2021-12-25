@@ -58,7 +58,7 @@ def launch(cmd, cv_args, kimgs_list, num_models):
         cmd = cmd.replace('--resume '+ resumefile, '')
     
     #### model selection ####
-    model_name, acc, network_pkl = calc_importance(resumefile, data, batch, cv_models_list, torch.device('cuda', 0))
+    model_name, acc, network_pkl = calc_linearprobe(resumefile, data, batch, cv_models_list, torch.device('cuda', 0))
     cv_models_list.remove(model_name)
     
     cv1 = model_name.split('input-')[1].split('-output')[0]
@@ -88,7 +88,7 @@ def launch(cmd, cv_args, kimgs_list, num_models):
         #### model selection ####
         run_dir = glob.glob(os.path.join(outdir, f'{cur_run_id:05d}*'))[0]
         print("$$$$$$$$$", run_dir)
-        model_name, acc, network_pkl = calc_importance(run_dir, data, batch, cv_models_list, torch.device('cuda', 0))
+        model_name, acc, network_pkl = calc_linearprobe(run_dir, data, batch, cv_models_list, torch.device('cuda', 0))
         cv_models_list.remove(model_name)
         
         cv_next = model_name.split('input-')[1].split('-output')[0]

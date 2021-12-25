@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument("--batch", type=int, default=64, help='Override batch size')
     return parser.parse_args()
 
-def calc_importance(network_pkl, data, batch, cv_models_list=None, device='cuda'):
+def calc_linearprobe(network_pkl, data, batch, cv_models_list=None, device='cuda'):
     dnnlib.util.Logger(should_flush=True)
 
     if '.pkl' not in network_pkl:  # rundir given and get the best model from that rundir
@@ -160,4 +160,4 @@ def calc_importance(network_pkl, data, batch, cv_models_list=None, device='cuda'
 
 if __name__ == "__main__":
     args = parse_args()
-    model_name, acc, network_pkl = calc_importance(args.network, args.data, args.batch)
+    model_name, acc, network_pkl = calc_linearprobe(args.network, args.data, args.batch)

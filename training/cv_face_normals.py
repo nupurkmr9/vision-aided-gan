@@ -3,7 +3,7 @@ import copy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .resnet import resnet18
+from .cv_resnet import resnet18
 
 def convrelu(in_channels, out_channels, kernel, padding):
     return nn.Sequential(
@@ -185,7 +185,7 @@ class Normals(torch.nn.Module):
         self.model.requires_grad = False
         
          
-    def __call__(self, image , return_features=False):
+    def __call__(self, image):
       image = F.interpolate(image, size=(256,256), mode='area')#, align_corners=True) 
       if 'conv' in self.cv_type:
         outs = self.model(image*0.5+0.5,get_feat=True) 
