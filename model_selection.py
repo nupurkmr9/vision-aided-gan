@@ -21,10 +21,10 @@ def calc_linearprobe(network_pkl, data, batch, cv_models_list=None, device='cuda
     dnnlib.util.Logger(should_flush=True)
 
     if '.pkl' not in network_pkl:  # rundir given and get the best model from that rundir
-        metricfile = glob.glob(os.path.join(network_pkl, 'metric-fid*'))[0]
+        metricfile = glob.glob(os.path.join(network_pkl, 'metric-fid50k_full.jsonl'))[0]
         metric = open(metricfile, 'r')
         metric = metric.readlines()
-        best_snapshot_fid = 500.
+        best_snapshot_fid = 999.
         for each in metric:
             if each.strip() == '':
                 continue
@@ -50,8 +50,8 @@ def calc_linearprobe(network_pkl, data, batch, cv_models_list=None, device='cuda
             'input-clip-output-pool',
             'input-dino-output-pool',
             'input-vgg-output-pool',
-            'input-seg_ade-output-feat_pool',
-            'input-det_coco-output-object_feat_pool',
+            'input-seg_ade-output-pool',
+            'input-det_coco-output-pool',
             'input-face_parsing-output-pool',
             'input-face_normals-output-pool',
         ]
@@ -65,7 +65,7 @@ def calc_linearprobe(network_pkl, data, batch, cv_models_list=None, device='cuda
         metrics[cv] = {}
         print("$$$$$$$$$$$$$$$$", cv, "$$$$$$$$$$$$$$$$")
 
-        class_name = 'training.cvmodel.CVWrapper'
+        class_name = 'vision_model.cvmodel.CVWrapper'
         cv_specs = {'cv_type': cv}
         cv_kwargs = dnnlib.EasyDict(class_name=class_name, **cv_specs)
         cv_pipe = dnnlib.util.construct_class_by_name(device, **cv_kwargs).requires_grad_(False).to(device)

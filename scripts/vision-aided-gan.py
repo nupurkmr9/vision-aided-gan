@@ -30,8 +30,8 @@ def launch(cmd, cv_args, kimgs_list, num_models):
         'input-clip-output-pool',
         'input-dino-output-pool',
         'input-vgg-output-pool',
-        'input-seg_ade-output-feat_pool',
-        'input-det_coco-output-object_feat_pool',
+        'input-seg_ade-output-pool',
+        'input-det_coco-output-pool',
         'input-face_parsing-output-pool',
         'input-face_normals-output-pool',
     ]
@@ -88,7 +88,7 @@ def launch(cmd, cv_args, kimgs_list, num_models):
         #### model selection ####
         run_dir = glob.glob(os.path.join(outdir, f'{cur_run_id:05d}*'))[0]
         print("$$$$$$$$$", run_dir)
-        model_name, acc, network_pkl = calc_linearprobe(run_dir, data, batch, cv_models_list, torch.device('cuda', 0))
+        model_name, acc, network_pkl = calc_linearprobe(os.path.join(run_dir, 'network-snapshot-best.pkl'), data, batch, cv_models_list, torch.device('cuda', 0))
         cv_models_list.remove(model_name)
         
         cv_next = model_name.split('input-')[1].split('-output')[0]

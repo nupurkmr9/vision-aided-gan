@@ -1,14 +1,20 @@
 # Vision-aided GAN
 
-### [video (3m)](https://youtu.be/oHdyJNdQ9E4) | [website](https://www.cs.cmu.edu/~vision-aided-gan/) |   [paper](https://arxiv.org/abs/2112.09130)
+
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ensembling-off-the-shelf-models-for-gan/image-generation-on-lsun-churches-256-x-256)](https://paperswithcode.com/sota/image-generation-on-lsun-churches-256-x-256?p=ensembling-off-the-shelf-models-for-gan)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ensembling-off-the-shelf-models-for-gan/image-generation-on-lsun-horse-256-x-256)](https://paperswithcode.com/sota/image-generation-on-lsun-horse-256-x-256?p=ensembling-off-the-shelf-models-for-gan)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ensembling-off-the-shelf-models-for-gan/image-generation-on-lsun-cat-256-x-256)](https://paperswithcode.com/sota/image-generation-on-lsun-cat-256-x-256?p=ensembling-off-the-shelf-models-for-gan)
+
+
+### [video](https://youtu.be/oHdyJNdQ9E4) | [website](https://www.cs.cmu.edu/~vision-aided-gan/) |   [paper](https://arxiv.org/abs/2112.09130)
+
 <br>
 
 <div class="gif">
-<img src='images/vision-aided-gan.gif' align="right" width=1000>
+<p align="center">
+<img src='images/vision-aided-gan.gif' align="center" width=800>
+</p>
 </div>
-
-<br><br><br><br><br>
-
 
 Can the collective *knowledge* from a large bank of pretrained vision models be leveraged to improve GAN training? If so, with so many models to choose from, which one(s) should be selected, and in what manner are they most effective?
 
@@ -20,7 +26,11 @@ Ensembling Off-the-shelf Models for GAN Training <br>
 arXiv 2112.09130, 2021
 
 ## Quantitative Comparison
+
+<p align="center">
 <img src="images/lsun_eval.jpg" width="800px"/><br>
+</p>
+
 Our method outperforms recent GAN training methods by a large margin, especially in limited sample setting. For LSUN Cat, we achieve similar FID as StyleGAN2 trained on the full dataset using only 0.7\% of the dataset.  On the full dataset, our method improves FID by 1.5x to 2x on cat, church, and horse categories of LSUN.
 
 ## Example Results
@@ -34,7 +44,9 @@ same randomly sample latent code.
 ## Interpolation Videos
 Latent interpolation results of models trained with our method on AnimalFace Cat (160 images), Dog (389 images),  and  Bridge-of-Sighs (100 photos).
 
-<img src="images/interp.gif" width="800px"/><br>
+<p align="center">
+<img src="images/interp.gif" width="800px"/>
+</p>
 
 ## Worst sample visualzation
 We randomly sample 5k images and sort them according to Mahalanobis distance using mean and variance of real samples calculated in inception feature space. Below visualization shows the bottom 30 images according to the distance for StyleGAN2-ADA (left) and our model (right).
@@ -101,14 +113,17 @@ Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu
 
 **To generate images**: 
 
+
 ```.bash
-python generate.py --outdir=out --trunc=1 --seeds=85,265,297,849 --network=<network.pkl>
+# random image generation from LSUN Church model
+
+python generate.py --outdir=out --trunc=1 --seeds=85,265,297,849 --network=https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table2_fulldataset/vision-aided-gan-lsunchurch-ada-3.pkl
 ```
 The output is stored in `out` directory controlled by `--outdir`. Our generator architecture is same as styleGAN2 and can be similarly used in the Python code as described in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#using-networks-from-python).
 
 **model evaluation**:
 ```.bash
-python calc_metrics.py --network <network.pkl> --metrics fid50k_full --data <dataset> --clean 1
+python calc_metrics.py --network https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table2_fulldataset/vision-aided-gan-lsunchurch-ada-3.pkl --metrics fid50k_full --data lsunchurch --clean 1
 ```
 We use [clean-fid](https://github.com/GaParmar/clean-fid) library to calculate FID metric. We calclate the full real distribution statistics for FID calculation. For details on calculating the statistics, please refer to [clean-fid](https://github.com/GaParmar/clean-fid).
 For default FID evaluation of StyleGAN2-ADA use `clean=0`. 
@@ -156,7 +171,7 @@ We autoamtically select the best model out of the set of pretrained models for t
 
 ```.bash
 python train.py --outdir models/ --data datasets/AnimalFace-dog.zip --gpus 2 --metrics fid50k_full --kimg 25000 \
-  --cfg paper256_2fmap --cv input-dino-output-conv_multi_level --cv-loss multilevel_s --augcv ada \
+  --cfg paper256_2fmap --cv input-clip-output-conv_multi_level --cv-loss multilevel_s --augcv ada \
   --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --warmup 1  
 ```
 
@@ -167,7 +182,7 @@ python model_selection.py --data mydataset.zip --network  <mynetworkfolder or my
 ```
 
 **To add you own pretrained Model**:
-create the class file to extract pretrained features inside `training` folder. Add the class path in the `class_name_dict` in `training.cvmodel.CVWrapper` class. Update the architecture of trainable classifier head over pretrained features in `training\Daux.py`.
+create the class file to extract pretrained features inside `vision_model` folder. Add the class path in the `class_name_dict` in `vision_model.cvmodel.CVWrapper` class. Update the architecture of trainable classifier head over pretrained features in `training.Daux`.
 
 
 

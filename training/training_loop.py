@@ -148,7 +148,7 @@ def training_loop(
     torch.backends.cudnn.allow_tf32 = allow_tf32        # Allow PyTorch to internally use tf32 for convolutions
     conv2d_gradfix.enabled = True                       # Improves training speed.
     grid_sample_gradfix.enabled = True                  # Avoids errors with the augmentation pipe.
-    # torch.autograd.set_detect_anomaly(True)
+    bestFID = 999.
     # Load training set.
     if rank == 0:
         print('Loading training set...')
@@ -220,7 +220,6 @@ def training_loop(
             else:
                 misc.copy_params_and_buffers(resume_data[name], module, require_all=False)
 
-        # del resume_data
      
     if (resume_pkl is not None and exact_resume > 0) and (augment_pipe is not None):
         with dnnlib.util.open_url(resume_pkl) as f:
@@ -315,7 +314,9 @@ def training_loop(
                     print("copying optimizer params")
                     phases[-2].opt.load_state_dict(resume_data[name+'main'])
                     phases[-1].opt.load_state_dict(resume_data[name+'reg'])
-
+    
+    if exact_resume > 0:
+        del resume_data
 
     for phase in phases:
         phase.start_event = None
@@ -510,11 +511,7 @@ def training_loop(
                     module = copy.deepcopy(module).eval().requires_grad_(False).cpu()
                 snapshot_data[name] = module
                 del module # conserve memory
-            for phase in phases:
-                snapshot_data[phase.name] = copy.deepcopy(phase.opt.state_dict())
-            if DAux is not None:
-                snapshot_data[phaseDAux.name] = copy.deepcopy(phaseDAux.opt.state_dict())
-                
+            
             snapshot_pkl = os.path.join(run_dir, f'network-snapshot-{cur_nimg//1000:06d}.pkl')
             if rank == 0:
                 with open(snapshot_pkl, 'wb') as f:
@@ -531,9 +528,20 @@ def training_loop(
                     
                 if rank == 0:
                     metric_main.report_metric(result_dict, run_dir=run_dir, snapshot_pkl=snapshot_pkl)
-                    
-                stats_metrics.update(result_dict.results)
+                
+                # check for best FID and save optimizer state dict as well if best model
+                if 'fid50k_full' in result_dict.results and result_dict.results['fid50k_full'] < bestFID and cur_nimg!=0:
+                    bestFID = result_dict.results['fid50k_full']
+                    for phase in phases:
+                        snapshot_data[phase.name] = copy.deepcopy(phase.opt.state_dict())
+                    if DAux is not None:
+                        snapshot_data[phaseDAux.name] = copy.deepcopy(phaseDAux.opt.state_dict())
+                    snapshot_pkl = os.path.join(run_dir, f'network-snapshot-best.pkl')
+                    if rank == 0:
+                        with open(snapshot_pkl, 'wb') as f:
+                            pickle.dump(snapshot_data, f)
 
+                stats_metrics.update(result_dict.results)
 
         del snapshot_data # conserve memory
         # Collect statistics.

@@ -3,7 +3,7 @@ import copy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .cv_resnet import resnet18
+from .resnet import resnet18
 
 def convrelu(in_channels, out_channels, kernel, padding):
     return nn.Sequential(
@@ -168,9 +168,6 @@ class ResNetUNet(nn.Module):
           
           return out_1
               
-    
-
-
 class Normals(torch.nn.Module):
 
     def __init__(self, cv_type='adv'):

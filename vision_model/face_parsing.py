@@ -3,7 +3,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_utils import persistence 
 
 class conv2DBatchNorm(nn.Module):
     def __init__(
@@ -924,8 +923,6 @@ class unet(nn.Module):
         return final
 
 
-
-@persistence.persistent_class
 class Parsing(torch.nn.Module):
 
     def __init__(self, cv_type = 'adv' ):

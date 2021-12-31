@@ -4,12 +4,8 @@ import torch.nn.functional as F
 import timm
 import clip
 import antialiased_cnns
-
-from torch_utils import persistence
 import dnnlib
 
-
-@persistence.persistent_class 
 class Vgg(nn.Module):
     def __init__(self, cv_type='adv'):
         super().__init__()
@@ -33,7 +29,6 @@ class Vgg(nn.Module):
         
         return out
 
-@persistence.persistent_class  
 class Swin(torch.nn.Module):
 
     def __init__(self, cv_type='adv'):
@@ -83,8 +78,7 @@ class Swin(torch.nn.Module):
             
         return self.model.forward_features(image)
 
-     
-@persistence.persistent_class   
+  
 class CLIP(torch.nn.Module):
 
     def __init__(self, cv_type='adv'):
@@ -115,8 +109,7 @@ class CLIP(torch.nn.Module):
             
         return image_features
             
-  
-@persistence.persistent_class   
+
 class DINO(torch.nn.Module):
 
     def __init__(self, cv_type='adv'):
@@ -147,9 +140,6 @@ class DINO(torch.nn.Module):
             
         return image_features
 
-
-
-@persistence.persistent_class       
 class CVWrapper(torch.nn.Module):
 
     def __init__(self, device, cv_type):
@@ -158,14 +148,14 @@ class CVWrapper(torch.nn.Module):
         cv_lists = cv_type.split('input-')[1].split('-output-')[0].split('-')
         output = cv_type.split('output-')[1]
         class_name_dict = {
-                'seg_ade': 'training.cv_swintaskspecific.Seg',
-                'det_coco': 'training.cv_swintaskspecific.Seg',
-                'face_parsing': 'training.cv_face_parsing.Parsing',
-                'face_normals': 'training.cv_face_normals.Normals',
-                'clip': 'training.cvmodel.CLIP',
-                'dino': 'training.cvmodel.DINO',
-                'vgg':'training.cvmodel.Vgg',
-                'swin':'training.cvmodel.Swin',
+                'seg_ade': 'vision_model.swintaskspecific.Seg',
+                'det_coco': 'vision_model.swintaskspecific.Seg',
+                'face_parsing': 'vision_model.face_parsing.Parsing',
+                'face_normals': 'vision_model.face_normals.Normals',
+                'clip': 'vision_model.cvmodel.CLIP',
+                'dino': 'vision_model.cvmodel.DINO',
+                'vgg':'vision_model.cvmodel.Vgg',
+                'swin':'vision_model.cvmodel.Swin',
             }
     
         self.cv_type = cv_type

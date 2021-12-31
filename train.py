@@ -333,7 +333,7 @@ def setup_training_loop_kwargs(
         
         input_ = cv.split('input-')[1].split('-output-')[0]
         output_ = cv.split('output-')[1]
-        class_name = 'training.cvmodel.CVWrapper'
+        class_name = 'vision_model.cvmodel.CVWrapper'
         cv_specs={'cv_type': cv}
         args.cv_kwargs = dnnlib.EasyDict(class_name=class_name, **cv_specs) 
 
@@ -526,7 +526,7 @@ class CommaSeparatedList(click.ParamType):
 @click.option('--allow-tf32', help='Allow PyTorch to use TF32 internally', type=bool, metavar='BOOL')
 @click.option('--workers', help='Override number of DataLoader workers', type=int, metavar='INT')
 
-#IDE loss options
+#Vision-aided adversarial loss options
 @click.option('--cv', help='CV model [default: None]', type=str) 
 @click.option('--warmup', help='if training from scratch, train with standard adversarial loss for 500k images and then introduce vision-aided-loss', type=bool, metavar='BOOL', default=False) 
 @click.option('--cv-loss', default= 'sigmoid_loss', help='CV loss', type=str) 
