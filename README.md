@@ -12,7 +12,7 @@
 
 <div class="gif">
 <p align="center">
-<img src='images/vision-aided-gan.gif' align="center" width=800>
+<img src='docs/vision-aided-gan.gif' align="center" width=800>
 </p>
 </div>
 
@@ -28,7 +28,7 @@ arXiv 2112.09130, 2021
 ## Quantitative Comparison
 
 <p align="center">
-<img src="images/lsun_eval.jpg" width="800px"/><br>
+<img src="docs/lsun_eval.jpg" width="800px"/><br>
 </p>
 
 Our method outperforms recent GAN training methods by a large margin, especially in limited sample setting. For LSUN Cat, we achieve similar FID as StyleGAN2 trained on the full dataset using only 0.7\% of the dataset.  On the full dataset, our method improves FID by 1.5x to 2x on cat, church, and horse categories of LSUN.
@@ -37,15 +37,15 @@ Our method outperforms recent GAN training methods by a large margin, especially
 Below, we show visual comparisons between the baseline StyleGAN2-ADA and our model (Vision-aided GAN) for the
 same randomly sample latent code.
 
-<img src="images/lsuncat1k_compare.gif" width="800px"/>
+<img src="docs/lsuncat1k_compare.gif" width="800px"/>
 
-<img src="images/ffhq1k_compare.gif" width="800px"/>
+<img src="docs/ffhq1k_compare.gif" width="800px"/>
 
 ## Interpolation Videos
 Latent interpolation results of models trained with our method on AnimalFace Cat (160 images), Dog (389 images),  and  Bridge-of-Sighs (100 photos).
 
 <p align="center">
-<img src="images/interp.gif" width="800px"/>
+<img src="docs/interp.gif" width="800px"/>
 </p>
 
 ## Worst sample visualzation
@@ -56,8 +56,8 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 <div class="images">
  <table width=500>
   <tr>
-    <td valign="top"><img src="images/afhqdog_worst_baseline.jpg"/></td>
-    <td valign="top"><img src="images/afhqdog_worst_ours.jpg"/></td>
+    <td valign="top"><img src="docs/afhqdog_worst_baseline.jpg"/></td>
+    <td valign="top"><img src="docs/afhqdog_worst_ours.jpg"/></td>
   </tr>
 </table>
 </div>
@@ -69,8 +69,8 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 <div class="images">
  <table>
   <tr>
-    <td valign="top"><img src="images/afhqcat_worst_baseline.jpg"/></td>
-    <td valign="top"><img src="images/afhqcat_worst_ours.jpg"/></td>
+    <td valign="top"><img src="docs/afhqcat_worst_baseline.jpg"/></td>
+    <td valign="top"><img src="docs/afhqcat_worst_ours.jpg"/></td>
   </tr>
 </table>
 </div>
@@ -82,8 +82,8 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 <div class="images">
  <table>
   <tr>
-    <td valign="top"><img src="images/afhqwild_worst_baseline.jpg"/></td>
-    <td valign="top"><img src="images/afhqwild_worst_ours.jpg"/></td>
+    <td valign="top"><img src="docs/afhqwild_worst_baseline.jpg"/></td>
+    <td valign="top"><img src="docs/afhqwild_worst_ours.jpg"/></td>
   </tr>
 </table>
 </div>
@@ -94,7 +94,7 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 
 * 64-bit Python 3.8 and PyTorch 1.8.0 (or later). See [https://pytorch.org/](https://pytorch.org/) for PyTorch install instructions.
 * Cuda toolkit 11.0 or later.
-* python libraries: see requirements.txt
+* python libraries: see scripts/requirements.txt
 * StyleGAN2 code relies heavily on custom PyTorch extensions. For detail please refer to the repo [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch)
 
 To setup conda env with all requirements and pretrained networks run the following command:
@@ -103,10 +103,10 @@ conda create -n vgan python=3.8
 conda activate vgan
 git clone https://github.com/nupurkmr9/vision-aided-gan.git
 cd vision-aided-gan
-bash scripts/setup.sh
+bash docs/setup.sh
 ```
 
-For details on off-the-shelf models please see [MODELS.md](MODELS.md)
+For details on off-the-shelf models please see [MODELS.md](docs/MODELS.md)
 
 ## Pretrained Models
 Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/)
@@ -161,7 +161,7 @@ All other datasets can be downloaded from their repsective websites:
 
 **Example command for Vision-aided GAN training with multiple pretrained networks**:
 ```.bash
-python scripts/vision-aided-gan.py --cmd "python train.py --outdir models/ --data datasets/AnimalFace-dog.zip \
+python vision-aided-gan.py --cmd "python train.py --outdir models/ --data datasets/AnimalFace-dog.zip \
   --gpus 2 --metrics fid50k_full --cfg paper256_2fmap  --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25" \
   --cv-args "--augcv ada --ada-target-cv 0.3 --augpipecv bgc"  --kimgs-list '1000,1000,1000'  --num 3
 ```
