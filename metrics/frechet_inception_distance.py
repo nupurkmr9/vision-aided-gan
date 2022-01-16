@@ -17,7 +17,6 @@ import torch
 import copy
 
 from cleanfid import fid
-from cleanfid.features import *
 from . import metric_utils
 
 #----------------------------------------------------------------------------

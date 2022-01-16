@@ -15,6 +15,8 @@ import json
 import tempfile
 import torch
 import dnnlib
+import argparse
+import importlib
 
 from training import training_loop
 from metrics import metric_main
@@ -23,10 +25,12 @@ from torch_utils import custom_ops
 
 #----------------------------------------------------------------------------
 
+
 class UserError(Exception):
     pass
 
 #----------------------------------------------------------------------------
+
 
 def setup_training_loop_kwargs(
     # General options (not included in desc).
@@ -49,6 +53,7 @@ def setup_training_loop_kwargs(
     d_reg_interval  = None, # Override R1 gamma: <float>
     kimg       = None, # Override training duration: <int>
     batch      = None, # Override batch size: <int>
+    batch_gpu  = None, # Override batch size per gpu: <int>
 
     # Discriminator augmentation.
     diffaugment= None, # Comma-separated list of DiffAugment policy, default = 'color,translation,cutout'
@@ -56,7 +61,7 @@ def setup_training_loop_kwargs(
     p          = None, # Specify p for 'fixed' (required): <float>
     target     = None, # Override ADA target for 'ada': <float>, default = depends on aug
     augpipe    = None, # Augmentation pipeline: 'blit', 'geom', 'color', 'filter', 'noise', 'cutout', 'bg', 'bgc' (default), ..., 'bgcfnc'
-   
+
     # Transfer learning.
     resume     = None, # Load previous network: 'noresume' (default), 'ffhq256', 'ffhq512', 'ffhq1024', 'celebahq256', 'lsundog256', <file>, <url>
     freezed    = None, # Freeze-D: <int>, default = 0 discriminator layers
@@ -74,15 +79,13 @@ def setup_training_loop_kwargs(
     cv_loss    = None, # cv loss
     augcv      = None, # Augmentation mode for CV input: 'ada' (default), 'noaug', 'fixed'
     augpipecv  = None, # Augmentation pipeline for CV: 
-    appendname = None,
-    ada_target_cv = 0.3, #target augmentation p for CV model
+    ada_target_cv = None, #target augmentation p for CV model
 
     # miscellaneous 
-    wandb_log = False, 
-    exact_resume  = 0,    # resume augmentation pipeline and optimizer 
-    cur_nimg = 0,  #nimg from which resuming if exact resume=1
-    clean = False, #FID clean or not
-    wandb_resume = False,
+    wandb_log     = None, # use wandb logging: setup entity and project name in training/trainin_loop.py
+    exact_resume  = 0,    # if 1 resume augmentation pipeline and optimizer 
+    clean         = None, # FID clean or not
+    **kwargs,
 
 ):
     
@@ -99,7 +102,7 @@ def setup_training_loop_kwargs(
     args.num_gpus = gpus
 
     if snap is None:
-        snap = 50
+        snap = 25
     assert isinstance(snap, int)
     if snap < 1:
         raise UserError('--snap must be at least 1')
@@ -176,12 +179,12 @@ def setup_training_loop_kwargs(
 
     cfg_specs = {
         'auto':      dict(ref_gpus=-1, kimg=25000,  mb=-1, mbstd=-1, fmaps=-1,  lrate=-1,     gamma=-1,   ema=-1,  ramp=0.05, map=2), # Populated dynamically based on resolution and GPU count.
-        'stylegan2': dict(ref_gpus=8,  kimg=25000,  mb=16, mbstd=4,  fmaps=1,   lrate=0.002,  gamma=10,   ema=10,  ramp=None, map=8), # Uses mixed-precision, unlike the original StyleGAN2.
-        'paper256':  dict(ref_gpus=8,  kimg=25000,  mb=16, mbstd=4,  fmaps=0.5, lrate=0.002, gamma=1,    ema=10,  ramp=None, map=8),
-        'paper512':  dict(ref_gpus=8,  kimg=25000,  mb=16, mbstd=4,  fmaps=1,   lrate=0.0025, gamma=0.5,  ema=20,  ramp=None, map=8),
-        'paper1024': dict(ref_gpus=8,  kimg=25000,  mb=16, mbstd=4,  fmaps=1,   lrate=0.002,  gamma=2,    ema=10,  ramp=None, map=8),
+        'stylegan2': dict(ref_gpus=4,  kimg=25000,  mb=16, mbstd=4,  fmaps=1,   lrate=0.002,  gamma=10,   ema=10,  ramp=None, map=8), # Uses mixed-precision, unlike the original StyleGAN2.
+        'paper256':  dict(ref_gpus=2,  kimg=25000,  mb=16, mbstd=4,  fmaps=0.5, lrate=0.002, gamma=1,    ema=10,  ramp=None, map=8),
+        'paper512':  dict(ref_gpus=4,  kimg=25000,  mb=16, mbstd=4,  fmaps=1,   lrate=0.0025, gamma=0.5,  ema=20,  ramp=None, map=8),
+        'paper1024': dict(ref_gpus=4,  kimg=25000,  mb=16, mbstd=4,  fmaps=1,   lrate=0.002,  gamma=2,    ema=10,  ramp=None, map=8),
         'cifar':     dict(ref_gpus=2,  kimg=100000, mb=64, mbstd=32, fmaps=1,   lrate=0.0025, gamma=0.01, ema=500, ramp=0.05, map=2), 
-        'paper256_2fmap':  dict(ref_gpus=8,  kimg=25000,  mb=16, mbstd=4,  fmaps=1, lrate=0.002, gamma=1,    ema=10,  ramp=None, map=8),
+        'paper256_2fmap':  dict(ref_gpus=2,  kimg=25000,  mb=16, mbstd=4,  fmaps=1, lrate=0.002, gamma=1,    ema=10,  ramp=None, map=8),
     }
 
     assert cfg in cfg_specs
@@ -250,7 +253,7 @@ def setup_training_loop_kwargs(
             raise UserError('--batch must be at least 1 and divisible by --gpus')
         desc += f'-batch{batch}'
         args.batch_size = batch
-        args.batch_gpu = batch // gpus
+        args.batch_gpu = batch_gpu or  batch // gpus
 
     # ---------------------------------------------------
     # Discriminator augmentation: aug, p, target, augpipe
@@ -326,44 +329,39 @@ def setup_training_loop_kwargs(
     # Vision-aided-Adversarial loss
     # ----------------------------------
 
-    args.DAux_kwargs = None
+    args.cvD_kwargs = None
     args.warmup = warmup
     if cv is not None:
         desc += '-{}'.format(cv)
-        
-        input_ = cv.split('input-')[1].split('-output-')[0]
-        output_ = cv.split('output-')[1]
+
         class_name = 'vision_model.cvmodel.CVWrapper'
         cv_specs={'cv_type': cv}
         args.cv_kwargs = dnnlib.EasyDict(class_name=class_name, **cv_specs) 
 
-        if len(input_.split('-')) > 1:
-            args.loss_kwargs.class_name = 'training.loss_multiple.StyleGAN2Loss'
-        
         args.cv_loss = cv_loss
         desc += '-cv_loss_{}'.format(cv_loss)
 
-        args.DAux_kwargs = dnnlib.EasyDict(class_name='training.Daux.DiscriminatorAux', cv_type= cv )
-        args.DAux_opt_kwargs = dnnlib.EasyDict(class_name='torch.optim.Adam', lr=spec.lrate, betas=[0,0.99], eps=1e-8)
+        args.cvD_kwargs = dnnlib.EasyDict(class_name='training.cv_discriminator.Discriminator', cv_type= cv )
+        args.cvD_opt_kwargs = dnnlib.EasyDict(class_name='torch.optim.Adam', lr=spec.lrate, betas=[0,0.99], eps=1e-8)
         
-    # ----------------------------------
-    # Pretrained model based Discriminator augmentation: augcv, p, target, augpipecv
-    # ----------------------------------
+        # ----------------------------------
+        # Pretrained model based Discriminator augmentation: augcv, p, target, augpipecv
+        # ----------------------------------
 
-    if augcv is not None:
-        if 'noaug' in augcv:
-            args.augment_kwargs_cv = None
-        elif 'diffaug' in augcv:
-            args.loss_kwargs.augment_pipe_cv = augcv
-            args.augment_kwargs_cv = None
-            desc += '-augcv_diffaug'
-        elif augcv =='ada':
-            args.ada_target_cv = ada_target_cv
-            desc += f'-augcv_{augcv}'
-            if augpipecv is None:
-                augpipecv = 'bgc'
-            args.augment_kwargs_cv = dnnlib.EasyDict(class_name='training.augment.AugmentPipe', **augpipe_specs[augpipecv])
-   
+        if augcv is not None:
+            if 'noaug' in augcv:
+                args.augment_kwargs_cv = None
+            elif 'diffaug' in augcv:
+                args.loss_kwargs.augment_pipe_cv = augcv
+                args.augment_kwargs_cv = None
+                desc += '-augcv_diffaug'
+            elif augcv =='ada':
+                args.ada_target_cv = ada_target_cv
+                desc += f'-augcv_{augcv}'
+                if augpipecv is None:
+                    augpipecv = 'bgc'
+                args.augment_kwargs_cv = dnnlib.EasyDict(class_name='training.augment.AugmentPipe', **augpipe_specs[augpipecv])
+    
     # ----------------------------------
     # Transfer learning: resume, freezed
     # ----------------------------------
@@ -436,11 +434,9 @@ def setup_training_loop_kwargs(
         if not workers >= 1:
             raise UserError('--workers must be at least 1')
         args.data_loader_kwargs.num_workers = workers
-    
-    if appendname is not None:
-        desc += appendname
         
     args.wandb_log = wandb_log
+    args.clean = clean
     args.desc = desc
     
     return desc, args
@@ -461,6 +457,7 @@ def subprocess_fn(rank, args, temp_dir):
             torch.distributed.init_process_group(backend='nccl', init_method=init_method, rank=rank, world_size=args.num_gpus)
 
     # Init torch_utils.
+    importlib.reload(training_stats)
     sync_device = torch.device('cuda', rank) if args.num_gpus > 1 else None
     training_stats.init_multiprocessing(rank=rank, sync_device=sync_device)
     if rank != 0:
@@ -482,68 +479,69 @@ class CommaSeparatedList(click.ParamType):
 
 #----------------------------------------------------------------------------
 
-@click.command()
-@click.pass_context
+def get_args_parser():
+    parser = argparse.ArgumentParser('main')
 
-# General options.
-@click.option('--outdir', help='Where to save the results', required=True, metavar='DIR')
-@click.option('--gpus', help='Number of GPUs to use [default: 1]', type=int, metavar='INT')
-@click.option('--snap', help='Snapshot interval [default: 50 ticks]', type=int, metavar='INT')
-@click.option('--metrics', help='Comma-separated list or "none" [default: fid50k_full]', type=CommaSeparatedList())
-@click.option('--seed', help='Random seed [default: 0]', type=int, metavar='INT')
-@click.option('-n', '--dry-run', help='Print training options and exit', is_flag=True)
+    # General options.
+    parser.add_argument('--outdir', help='Where to save the results', required=True, metavar='DIR')
+    parser.add_argument('--gpus', help='Number of GPUs to use [default: 1]', type=int, metavar='INT')
+    parser.add_argument('--snap', help='Snapshot interval [default: 50 ticks]', type=int, metavar='INT')
+    parser.add_argument('--metrics', help='Comma-separated list or "none" [default: fid50k_full]', type=CommaSeparatedList())
+    parser.add_argument('--seed', help='Random seed [default: 0]', type=int, metavar='INT')
+    parser.add_argument('--dry-run', help='Print training options and exit', action='store_true', default=False)
 
-# Dataset.
-@click.option('--data', help='Training data (directory or zip)', metavar='PATH', required=True)
-@click.option('--cond', help='Train conditional model based on dataset labels [default: false]', type=bool, metavar='BOOL')
-@click.option('--subset', help='Train with only N images [default: all]', type=int, metavar='INT')
-@click.option('--mirror', help='Enable dataset x-flips [default: false]', type=bool, metavar='BOOL')
+    # Dataset.
+    parser.add_argument('--data', help='Training data (directory or zip)', metavar='PATH', required=True)
+    parser.add_argument('--cond', help='Train conditional model based on dataset labels [default: false]', type=bool, metavar='BOOL')
+    parser.add_argument('--subset', help='Train with only N images [default: all]', type=int, metavar='INT')
+    parser.add_argument('--mirror', help='Enable dataset x-flips [default: false]', type=bool, metavar='BOOL')
 
-# Base config.
-@click.option('--cfg', help='Base config [default: auto]', type=click.Choice(['auto', 'stylegan2', 'paper256', 'paper256_2fmap', 'paper512', 'paper1024', 'cifar']))
-@click.option('--gamma', help='Override R1 gamma', type=float)
-@click.option('--pl-weight', help='Override G path regularization', type=float)
-@click.option('--g-reg-interval', help='lazy regularization G interval', type=int, metavar='INT')
-@click.option('--d-reg-interval', help='lazy regularization D interval', type=int, metavar='INT')
-@click.option('--kimg', help='Override training duration', type=int, metavar='INT')
-@click.option('--batch', help='Override batch size', type=int, metavar='INT')
+    # Base config.
+    parser.add_argument('--cfg', help='Base config [default: auto]', type=click.Choice(['auto', 'stylegan2', 'paper256', 'paper256_2fmap', 'paper512', 'paper1024', 'cifar']))
+    parser.add_argument('--gamma', help='Override R1 gamma', type=float)
+    parser.add_argument('--pl-weight', help='Override G path regularization', type=float)
+    parser.add_argument('--g-reg-interval', help='lazy regularization G interval', type=int, metavar='INT')
+    parser.add_argument('--d-reg-interval', help='lazy regularization D interval', type=int, metavar='INT')
+    parser.add_argument('--kimg', help='Override training duration', type=int, metavar='INT')
+    parser.add_argument('--batch', help='Override batch size', type=int, metavar='INT')
+    parser.add_argument('--batch-gpu', help='Override batch size per gpu', type=int, metavar='INT')
 
-# Discriminator augmentation.
-@click.option('--diffaugment', help='Comma-separated list of DiffAugment policy [default: color,translation,cutout]', type=str)
-@click.option('--aug', help='Augmentation mode [default: ada]', type=click.Choice(['noaug', 'ada', 'fixed']))
-@click.option('--p', help='Augmentation probability for --aug=fixed', type=float)
-@click.option('--target', help='ADA target value for --aug=ada', type=float)
-@click.option('--augpipe', help='Augmentation pipeline [default: bgc]', type=click.Choice(['blit', 'geom', 'color', 'filter', 'noise', 'cutout', 'bg', 'bgc', 'bgcf', 'bgcfn', 'bgcfnc']))
+    # Discriminator augmentation.
+    parser.add_argument('--diffaugment', help='Comma-separated list of DiffAugment policy [default: color,translation,cutout]', type=str)
+    parser.add_argument('--aug', help='Augmentation mode [default: ada]', type=click.Choice(['noaug', 'ada', 'fixed']))
+    parser.add_argument('--p', help='Augmentation probability for --aug=fixed', type=float)
+    parser.add_argument('--target', help='ADA target value for --aug=ada', type=float)
+    parser.add_argument('--augpipe', help='Augmentation pipeline [default: bgc]', type=click.Choice(['blit', 'geom', 'color', 'filter', 'noise', 'cutout', 'bg', 'bgc', 'bgcf', 'bgcfn', 'bgcfnc']))
 
-# Transfer learning.
-@click.option('--resume', help='Resume training [default: noresume]', metavar='PKL')
-@click.option('--freezed', help='Freeze-D [default: 0 layers]', type=int, metavar='INT')
+    # Transfer learning.
+    parser.add_argument('--resume', help='Resume training [default: noresume]', metavar='PKL')
+    parser.add_argument('--freezed', help='Freeze-D [default: 0 layers]', type=int, metavar='INT')
 
-# Performance options.
-@click.option('--fp32', help='Disable mixed-precision training', type=bool, metavar='BOOL')
-@click.option('--nhwc', help='Use NHWC memory format with FP16', type=bool, metavar='BOOL')
-@click.option('--nobench', help='Disable cuDNN benchmarking', type=bool, metavar='BOOL')
-@click.option('--allow-tf32', help='Allow PyTorch to use TF32 internally', type=bool, metavar='BOOL')
-@click.option('--workers', help='Override number of DataLoader workers', type=int, metavar='INT')
+    # Performance options.
+    parser.add_argument('--fp32', help='Disable mixed-precision training', type=bool, metavar='BOOL')
+    parser.add_argument('--nhwc', help='Use NHWC memory format with FP16', type=bool, metavar='BOOL')
+    parser.add_argument('--nobench', help='Disable cuDNN benchmarking', type=bool, metavar='BOOL')
+    parser.add_argument('--allow-tf32', help='Allow PyTorch to use TF32 internally', type=bool, metavar='BOOL')
+    parser.add_argument('--workers', help='Override number of DataLoader workers', type=int, metavar='INT')
 
-#Vision-aided adversarial loss options
-@click.option('--cv', help='CV model [default: None]', type=str) 
-@click.option('--warmup', help='if training from scratch, train with standard adversarial loss for 500k images and then introduce vision-aided-loss', type=bool, metavar='BOOL', default=False) 
-@click.option('--cv-loss', default= 'sigmoid_loss', help='CV loss', type=str) 
-@click.option('--augcv', help='Augmentation mode [default: None]', type=str)
-@click.option('--augpipecv', help='Augmentation pipeline [default: bgc if augcv ada]', type=str)
-@click.option('--ada-target-cv', default=0.3, help='Augmentation target probability', type=float)
-@click.option('--exact-resume', help='0: only resume model weights, 1: resume model weights ensuring exact match and augpipe, 2: resume model weights, optimizer and augpipe', type=int, default=0, metavar='INT')
+    #Vision-aided adversarial loss options
+    parser.add_argument('--cv', help='CV model [default: None]', type=str) 
+    parser.add_argument('--warmup', help='if training from scratch, train with standard adversarial loss for 500k images and then introduce vision-aided-loss', type=bool, metavar='BOOL', default=False) 
+    parser.add_argument('--cv-loss', default= '', help='CV loss', type=str) 
+    parser.add_argument('--augcv', help='Augmentation mode [default: None]', type=str)
+    parser.add_argument('--augpipecv', default='bgc', help='Augmentation pipeline [default: bgc]', type=str)
+    parser.add_argument('--ada-target-cv', default=0.3, help='Augmentation target probability', type=float)
+    parser.add_argument('--exact-resume', help='0: only resume model weights, 1: resume model weights ensuring exact match and augpipe, 2: resume model weights, optimizer and augpipe', type=int, default=0, metavar='INT')
 
-# miscellaneous
-@click.option('--appendname', help='add in the end of training folder name', type=str)
-@click.option('--wandb-log', help='wandb logging instead of tensorboard logging', type=bool, metavar='BOOL')
-@click.option('--clean', help='FID evaluation using clean-fid (https://github.com/GaParmar/clean-fid)', type=bool, metavar='BOOL', default=False)
+    # miscellaneous
+    parser.add_argument('--wandb-log', help='wandb logging instead of tensorboard logging', type=bool, metavar='BOOL', default=False)
+    parser.add_argument('--clean', help='FID evaluation using clean-fid (https://github.com/GaParmar/clean-fid)', type=bool, metavar='BOOL', default=False)
 
+    return parser
 
-def main(ctx, outdir, dry_run, **config_kwargs):
+def main(args):
     """Train a GAN using the techniques described in the paper
-    "Training Generative Adversarial Networks with Limited Data".
+    "Ensembling Off-the-shelf Models for GAN Training".
 
     Examples:
 
@@ -596,13 +594,13 @@ def main(ctx, outdir, dry_run, **config_kwargs):
     """
 
     dnnlib.util.Logger(should_flush=True)
-
+    outdir = args.outdir
+    dry_run = args.dry_run
     # Setup training options.
     try:
-        run_desc, args = setup_training_loop_kwargs(**config_kwargs)
-        print(args)
+        run_desc, args = setup_training_loop_kwargs(**vars(args))
     except UserError as err:
-        ctx.fail(err)
+        print(err)
 
     # Pick output directory.
     prev_run_dirs = []
@@ -643,7 +641,10 @@ def main(ctx, outdir, dry_run, **config_kwargs):
 
     # Launch processes.
     print('Launching processes...')
-    torch.multiprocessing.set_start_method('spawn')
+    try:
+        torch.multiprocessing.set_start_method('spawn')
+    except RuntimeError:
+        pass
     with tempfile.TemporaryDirectory() as temp_dir:
         if args.num_gpus == 1:
             subprocess_fn(rank=0, args=args, temp_dir=temp_dir)
@@ -653,7 +654,8 @@ def main(ctx, outdir, dry_run, **config_kwargs):
 #----------------------------------------------------------------------------            
 
 if __name__ == "__main__":
-    main() # pylint: disable=no-value-for-parameter
+    args = get_args_parser()
+    main(args.parse_args())
 
 #----------------------------------------------------------------------------
 

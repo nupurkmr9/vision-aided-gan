@@ -11,12 +11,12 @@ class MultiLevelDViT(nn.Module):
         super().__init__()
 
         self.decoder1 = []
-        for i in range(level-1):
-            self.decoder1.append(nn.Sequential(Conv2dLayer(in_ch1, out_ch, kernel_size =3, down=down, activation='lrelu'), 
-                                                Conv2dLayer(out_ch, 1, kernel_size=1, down=2)))
+        for _ in range(level-1):
+            self.decoder1.append(nn.Sequential(Conv2dLayer(in_ch1, out_ch, kernel_size=3, down=down, activation='lrelu'),
+                                               Conv2dLayer(out_ch, 1, kernel_size=1, down=2)))
 
         self.decoder1.append(nn.Sequential(FullyConnectedLayer(in_ch2, out_ch, activation='lrelu'),
-                                                  FullyConnectedLayer(out_ch, 1)))
+                                           FullyConnectedLayer(out_ch, 1)))
 
         self.decoder1 = nn.ModuleList(self.decoder1)
 
@@ -38,9 +38,9 @@ class SimpleD(nn.Module):
         super().__init__()
 
         self.decoder = nn.Sequential(Conv2dLayer(in_ch, out_ch, kernel_size=3, down=2, activation='lrelu'),
-                                        nn.Flatten(),
-                                        FullyConnectedLayer(out_ch*out_size*out_size, 256, activation='lrelu'),
-                                        FullyConnectedLayer(out_ch, 1))
+                                     nn.Flatten(),
+                                     FullyConnectedLayer(out_ch*out_size*out_size, out_ch, activation='lrelu'),
+                                     FullyConnectedLayer(out_ch, 1))
 
     def forward(self, input):
 
@@ -53,7 +53,7 @@ class MLPD(nn.Module):
         super().__init__()
 
         self.decoder = nn.Sequential(FullyConnectedLayer(in_ch, out_ch, activation='lrelu'),
-                                                  FullyConnectedLayer(out_ch, 1))
+                                     FullyConnectedLayer(out_ch, 1))
 
     def forward(self, input):
         return self.decoder(input)
@@ -76,8 +76,8 @@ class MultiLevelDConv(nn.Module):
                     Conv2dLayer(out_ch, 1, kernel_size=1, down=2)))
 
         self.decoder1.append(nn.Sequential(nn.AdaptiveAvgPool2d(1), nn.Flatten(),
-                                            FullyConnectedLayer(in_ch3, out_ch, activation='lrelu'),
-                                            FullyConnectedLayer(out_ch, 1)))
+                                           FullyConnectedLayer(in_ch3, out_ch, activation='lrelu'),
+                                           FullyConnectedLayer(out_ch, 1)))
 
         self.decoder1 = nn.ModuleList(self.decoder1)
 
@@ -94,7 +94,7 @@ class MultiLevelDConv(nn.Module):
 
 
 @persistence.persistent_class
-class DiscriminatorAux(torch.nn.Module):
+class Discriminator(torch.nn.Module):
     def __init__(self, cv_type):
         super().__init__()
 
@@ -139,13 +139,10 @@ class DiscriminatorAux(torch.nn.Module):
 
         self.decoder = nn.ModuleList(self.decoder)
 
-    def forward(self, cv_feat, c):
+    def forward(self, cv_feat, c=None):
 
-        if len(self.decoder) == 1:
-            pred_mask = self.decoder[0](cv_feat)
-        else:
-            pred_mask = []
-            for i, each in enumerate(cv_feat):
-                pred_mask.append(self.decoder[i](each))
+        pred_mask = []
+        for i, each in enumerate(cv_feat):
+            pred_mask.append(self.decoder[i](each))
 
         return pred_mask

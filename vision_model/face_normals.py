@@ -183,7 +183,7 @@ class Normals(torch.nn.Module):
         
          
     def __call__(self, image):
-      image = F.interpolate(image, size=(256,256), mode='area')#, align_corners=True) 
+      image = F.interpolate(image, size=(256,256), mode='area') 
       if 'conv' in self.cv_type:
         outs = self.model(image*0.5+0.5,get_feat=True) 
         return outs

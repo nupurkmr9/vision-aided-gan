@@ -1,4 +1,3 @@
-import click
 import torch
 import os
 import glob
@@ -17,7 +16,8 @@ def parse_args():
     parser.add_argument("--batch", type=int, default=64, help='Override batch size')
     return parser.parse_args()
 
-def calc_linearprobe(network_pkl, data, batch, cv_models_list=None, device='cuda'):
+
+def calc_linearprobe(network_pkl, data, batch=64, cv_models_list=None, device='cuda'):
     dnnlib.util.Logger(should_flush=True)
 
     if '.pkl' not in network_pkl:  # rundir given and get the best model from that rundir
@@ -89,9 +89,9 @@ def calc_linearprobe(network_pkl, data, batch, cv_models_list=None, device='cuda
             feats = []
             label = []
             with torch.no_grad():
-                for _, (val_img, val_c) in enumerate(training_set_iterator):
+                for _, (val_img, _) in enumerate(training_set_iterator):
                     val_img = (val_img.to(device).to(torch.float32) / 127.5 - 1.)
-                    val_feat = cv_pipe(val_img)
+                    val_feat = cv_pipe([val_img])[0]
                     feats.append(val_feat.cpu())
                     label.append(np.ones(val_feat.size(0)))
                     if len(feats)*batch > 10000:
@@ -110,10 +110,10 @@ def calc_linearprobe(network_pkl, data, batch, cv_models_list=None, device='cuda
             label = []
 
             with torch.no_grad():
-                for i in range(len(training_set) // batch):
+                for _ in range(len(training_set) // batch):
                     z = torch.randn(batch, G_ema.z_dim)
                     val_img = G_ema(z.to(device), None)
-                    val_feat = cv_pipe(val_img)
+                    val_feat = cv_pipe([val_img])[0]
                     feats.append(val_feat.cpu())
                     label.append(np.zeros(val_feat.size(0)))
                     if len(feats)*batch > 10000:
@@ -157,6 +157,7 @@ def calc_linearprobe(network_pkl, data, batch, cv_models_list=None, device='cuda
     return cv_models_list[np.argmax(linear_probe_acc)], np.max(linear_probe_acc), network_pkl
 
 # ----------------------------------------------------------------------------
+
 
 if __name__ == "__main__":
     args = parse_args()

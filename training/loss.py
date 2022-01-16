@@ -16,17 +16,17 @@ from .DiffAugment_pytorch import DiffAugment
 
 #----------------------------------------------------------------------------
 
+
 class Loss:
-    def accumulate_gradients(self, phase, real_img, real_c, gen_z, gen_c, sync, gain): # to be overridden by subclass
+    def accumulate_gradients(self, phase, real_img, real_c, gen_z, gen_c, sync, gain):  # to be overridden by subclass
         raise NotImplementedError()
 
 #----------------------------------------------------------------------------
 
 
-
 class StyleGAN2Loss(Loss):
-    def __init__(self, device, G_mapping, G_synthesis, D, DAux=None, diffaugment='',  augment_pipe=None, augment_pipe_cv=None,
-                 cv_ensemble=None, cv_loss=None, cv_type=None, style_mixing_prob=0.9, r1_gamma=10, pl_batch_shrink=2, 
+    def __init__(self, device, G_mapping, G_synthesis, D, cvD=None, diffaugment=None,  augment_pipe=None, augment_pipe_cv=None,
+                 cv_ensemble=None, cv_loss=None, cv_type=None, style_mixing_prob=0.9, r1_gamma=10, pl_batch_shrink=2,
                  pl_decay=0.01, pl_weight=2):
         super().__init__()
         self.device = device
@@ -44,17 +44,10 @@ class StyleGAN2Loss(Loss):
         self.pl_weight = pl_weight
         self.pl_mean = torch.zeros([], device=device)
         self.cv_type = cv_type
-        self.DAux = DAux
+        self.cvD = cvD
         if self.cv_type is not None:
-            loss_dict = {
-                'sigmoid': 'sigmoid_loss',
-                'sigmoid_s': 'sigmoid_loss_smooth',
-                'multilevel': 'multilevel_loss', 
-                'multilevel_s': 'multilevel_loss_smooth',
-            }
+            self.vision_aided_loss = dnnlib.util.construct_class_by_name(class_name='training.cv_losses.losses_list', loss_type=cv_loss).to(device)
 
-            self.aux_loss = dnnlib.util.construct_class_by_name(class_name='training.lossfn.' + loss_dict[cv_loss]).to(device)    
-        
     def run_G(self, z, c, sync):
         with misc.ddp_sync(self.G_mapping, sync):
             ws = self.G_mapping(z, c)
@@ -67,7 +60,6 @@ class StyleGAN2Loss(Loss):
             img = self.G_synthesis(ws)
         return img, ws
 
-    
     def run_D(self, img, c, sync=False, detach=False):
         if self.diffaugment:
             img1 = DiffAugment(img, policy=self.diffaugment)
@@ -78,9 +70,11 @@ class StyleGAN2Loss(Loss):
 
         if self.cv_ensemble is not None:
             if isinstance(self.augment_pipe_cv, str) and 'diffaug' in self.augment_pipe_cv:
-                img_cv = DiffAugment(img, policy=self.augment_pipe_cv.split('diffaug-')[1])
+                img_cv = [DiffAugment(img, policy=self.augment_pipe_cv.split('diffaug-')[1])
+                          for _ in range(len(self.cv_ensemble.models))]
             elif self.augment_pipe_cv is not None:
-                img_cv = DiffAugment(self.augment_pipe_cv(img, prob=self.augment_pipe_cv.p[0]), policy='cutout')
+                img_cv = [DiffAugment(self.augment_pipe_cv(img, prob=self.augment_pipe_cv.p[i]), policy='cutout')
+                          for i in range(len(self.cv_ensemble.models))]
             else:
                 img_cv = img
 
@@ -92,16 +86,16 @@ class StyleGAN2Loss(Loss):
 
             with misc.ddp_sync(self.D, sync):
                 logits = self.D(img1, c)
-            with misc.ddp_sync(self.DAux, sync):
-                logits_aux = self.DAux(cv_feat, c)
+            with misc.ddp_sync(self.cvD, sync):
+                logits_cv = self.cvD(cv_feat, c)
 
-            return logits, logits_aux
+            return logits, logits_cv
         else:
             with misc.ddp_sync(self.D, sync):
                 logits = self.D(img1, c)
                 return logits
 
-    def accumulate_gradients(self, phase, real_img, real_c, gen_z, gen_c, sync, gain, loss_multiplier=1.):
+    def accumulate_gradients(self, phase, real_img, real_c, gen_z, gen_c, sync, gain, lambda_=1.):
         assert phase in ['Gmain', 'Greg', 'Gboth', 'Dmain', 'Dreg', 'Dboth']
         do_Gmain = (phase in ['Gmain', 'Gboth'])
         do_Dmain = (phase in ['Dmain', 'Dboth'])
@@ -112,20 +106,19 @@ class StyleGAN2Loss(Loss):
         if do_Gmain:
             with torch.autograd.profiler.record_function('Gmain_forward'):
                 gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=(sync and not do_Gpl))
-                
+
                 if self.cv_type is not None:
-                    gen_logits, logits_aux = self.run_D(gen_img, gen_c,sync=False)
-                    aux_loss = self.aux_loss.loss(logits_aux, for_real = True)
-                    training_stats.report('Loss/G/aux_loss', aux_loss)
+                    gen_logits, logits_cv = self.run_D(gen_img, gen_c, sync=False)
+                    vision_aided_loss = self.vision_aided_loss.loss(logits_cv, for_real=True, forG=True)*lambda_
                 else:
                     gen_logits = self.run_D(gen_img, gen_c, sync=False)
                 training_stats.report('Loss/scores/fake', gen_logits)
                 training_stats.report('Loss/signs/fake', gen_logits.sign())
-                loss_Gmain = torch.nn.functional.softplus(-gen_logits) # -log(sigmoid(gen_logits))
+                loss_Gmain = torch.nn.functional.softplus(-gen_logits)  # -log(sigmoid(gen_logits))
                 training_stats.report('Loss/G/loss', loss_Gmain)
             with torch.autograd.profiler.record_function('Gmain_backward'):
                 if self.cv_type is not None:
-                    (loss_Gmain+loss_multiplier*aux_loss).mean().mul(gain).backward()
+                    (loss_Gmain+vision_aided_loss).mean().mul(gain).backward()
                 else:
                     loss_Gmain.mean().mul(gain).backward()
 
@@ -150,28 +143,23 @@ class StyleGAN2Loss(Loss):
         # Dmain: Minimize logits for generated images.
         loss_Dgen = 0
         detach = True
-        
+
         if do_Dmain:
             with torch.autograd.profiler.record_function('Dgen_forward'):
                 gen_img, _gen_ws = self.run_G(gen_z, gen_c, sync=False)
                 if self.cv_type is not None:
-                    gen_logits, logits_aux = self.run_D(gen_img, gen_c, sync=False, detach=detach)
-                    aux_loss = self.aux_loss.loss(logits_aux , for_real = False)
-                    training_stats.report('Loss/D/aux_loss_fake', aux_loss)
-                    if isinstance(logits_aux, list):
-                        training_stats.report('Loss/signs/fake0', logits_aux[-1].sign())
-                    else:
-                        training_stats.report('Loss/signs/fake0', logits_aux.sign())
+                    gen_logits, logits_cv = self.run_D(gen_img, gen_c, sync=False, detach=detach)
+                    vision_aided_loss = self.vision_aided_loss.loss(logits_cv, for_real=False)*lambda_
                 else:
                     gen_logits = self.run_D(gen_img, gen_c, sync=False)
                 training_stats.report('Loss/scores/fake', gen_logits)
                 training_stats.report('Loss/signs/fake', gen_logits.sign())
-                loss_Dgen = torch.nn.functional.softplus(gen_logits) # -log(1 - sigmoid(gen_logits))
+                loss_Dgen = torch.nn.functional.softplus(gen_logits)  # -log(1 - sigmoid(gen_logits))
                 acc_Dfake = ((torch.sigmoid(gen_logits) < 0.5).float()).mean()
                 training_stats.report('Acc/D/fake', acc_Dfake)
             with torch.autograd.profiler.record_function('Dgen_backward'):
                 if self.cv_type is not None:
-                    (loss_Dgen+loss_multiplier*aux_loss).mean().mul(gain).backward()
+                    (loss_Dgen+vision_aided_loss).mean().mul(gain).backward()
                 else:
                     loss_Dgen.mean().mul(gain).backward()
 
@@ -182,24 +170,24 @@ class StyleGAN2Loss(Loss):
             with torch.autograd.profiler.record_function(name + '_forward'):
                 real_img_tmp = real_img.detach().requires_grad_(do_Dr1)
                 if self.cv_type is not None:
-                    real_logits, logits_aux = self.run_D(real_img_tmp, real_c, sync=sync, detach=detach)
-                    if isinstance(logits_aux, list):
-                        training_stats.report('Loss/signs/real0', logits_aux[-1].sign())
-                    else:
-                        training_stats.report('Loss/signs/real0', logits_aux.sign())
+                    real_logits, logits_cv = self.run_D(real_img_tmp, real_c, sync=sync, detach=detach)
+                    for i in range(len(self.cv_ensemble.models)):
+                        if isinstance(logits_cv[i], list):
+                            training_stats.report('Loss/signs/real' + str(i), logits_cv[i][-1].sign())
+                        else:
+                            training_stats.report('Loss/signs/real' + str(i), logits_cv[i].sign())
                 else:
                     real_logits = self.run_D(real_img_tmp, real_c, sync=sync, detach=True)
                 training_stats.report('Loss/scores/real', real_logits)
                 training_stats.report('Loss/signs/real', real_logits.sign())
 
                 loss_Dreal = 0
-                aux_loss = 0
+                vision_aided_loss = 0
                 if do_Dmain:
                     if self.cv_type is not None:
-                        aux_loss = self.aux_loss.loss(logits_aux, for_real = True)#, alpha=loss_mult)
-                        training_stats.report('Loss/D/aux_loss_real', aux_loss)
-                        
-                    loss_Dreal = torch.nn.functional.softplus(-real_logits) # -log(sigmoid(real_logits))
+                        vision_aided_loss = self.vision_aided_loss.loss(logits_cv, for_real=True)*lambda_
+
+                    loss_Dreal = torch.nn.functional.softplus(-real_logits)  # -log(sigmoid(real_logits))
                     acc_Dreal = ((torch.sigmoid(real_logits) >= 0.5).float()).mean()
                     training_stats.report('Loss/D/loss', loss_Dgen + loss_Dreal)
                     training_stats.report('Acc/D/real', acc_Dreal)
@@ -207,22 +195,22 @@ class StyleGAN2Loss(Loss):
                 loss_Dr1 = 0
                 if do_Dr1:
                     with torch.autograd.profiler.record_function('r1_grads'), conv2d_gradfix.no_weight_gradients():
-                        r1_grads = torch.autograd.grad(outputs=[real_logits.sum()], inputs=[real_img_tmp], 
+                        r1_grads = torch.autograd.grad(outputs=[real_logits.sum()], inputs=[real_img_tmp],
                                                        create_graph=True, only_inputs=True)[0]
 
-                    r1_penalty = r1_grads.square().sum([1,2,3])
+                    r1_penalty = r1_grads.square().sum([1, 2, 3])
                     loss_Dr1 = r1_penalty * (self.r1_gamma / 2)
                     training_stats.report('Loss/r1_penalty', r1_penalty)
                     training_stats.report('Loss/D/reg', loss_Dr1)
 
             with torch.autograd.profiler.record_function(name + '_backward'):
                 if self.cv_type is not None:
-                    loss_aux_mask = 0
-                    if isinstance(logits_aux, list):
-                        loss_aux_mask = sum([each.sum() for each in logits_aux ])* 0
-                    else:
-                        loss_aux_mask = logits_aux.sum() * 0
-                        
-                    (real_logits * 0 + loss_aux_mask + loss_Dreal + loss_Dr1 + loss_multiplier*aux_loss  ).mean().mul(gain).backward()
+                    vision_aided_loss_mask = 0
+                    for each in logits_cv:
+                        if isinstance(each, list):
+                            vision_aided_loss_mask += sum([x.sum() for x in each]) * 0
+                        else:
+                            vision_aided_loss_mask += each.sum() * 0
+                    (real_logits * 0 + vision_aided_loss_mask + loss_Dreal + loss_Dr1 + vision_aided_loss).mean().mul(gain).backward()
                 else:
                     (real_logits * 0 + loss_Dreal + loss_Dr1).mean().mul(gain).backward()

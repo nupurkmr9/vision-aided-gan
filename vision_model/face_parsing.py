@@ -925,7 +925,7 @@ class unet(nn.Module):
 
 class Parsing(torch.nn.Module):
 
-    def __init__(self, cv_type = 'adv' ):
+    def __init__(self, cv_type='adv'):
         super().__init__(
         )
 
@@ -933,45 +933,40 @@ class Parsing(torch.nn.Module):
 
         self.model = unet()
         self.model.load_state_dict(torch.load('pretrained-models/celeba_parsing_model.pth', map_location='cpu'))
-        
-        self.model.eval() 
+        self.model.eval()
         self.model.requires_grad = False
-        
+
         self.num_classes = 19
-        self.valid_classes = [0,18,1,17,8,9,2,3,4,5,6,7,10,11,12,13,14]
-        self.major_classes = [1,2,3,4,5,6,7,8,9,10,11,12,13,16,17,18]
         self.colormap = torch.from_numpy(np.array([(0,  0,  0), (204, 0,  0), (76, 153, 0),
                      (204, 204, 0), (51, 51, 255), (204, 0, 204), (0, 255, 255),
                      (51, 255, 255), (102, 51, 0), (255, 0, 0), (102, 204, 0),
                      (255, 255, 0), (0, 0, 153), (0, 0, 204), (255, 51, 153), 
                      (0, 204, 204), (0, 51, 0), (255, 153, 51), (0, 204, 0)], 
-                     dtype=np.uint8) )
-        
+                     dtype=np.uint8))
         kernel_size = 5
-        kernel = np.ones((kernel_size,kernel_size))/(kernel_size**2)
+        kernel = np.ones((kernel_size, kernel_size))/(kernel_size**2)
         self.average_filter = nn.Conv2d(in_channels=self.num_classes, out_channels=self.num_classes,
                                     kernel_size=kernel_size, groups=self.num_classes, bias=False)
-
-        self.average_filter.weight.data = torch.from_numpy(kernel).unsqueeze(0).unsqueeze(0).repeat((self.num_classes,1,1,1)).float()
+        self.average_filter.weight.data = torch.from_numpy(kernel).unsqueeze(0).unsqueeze(0).repeat((self.num_classes, 1, 1, 1)).float()
         self.average_filter.weight.requires_grad = False
         
-    def __call__(self, image , mult = 1., return_features=False):
-        image = F.interpolate(image, size=(256,256), mode='area')
+    def __call__(self, image):
+        image = F.interpolate(image, size=(256, 256), mode='area')
 
         if 'pool' in self.cv_type:
-            masks = self.model(image, get_feat = True)
-            masks = F.avg_pool2d(masks , 16).squeeze()
+            masks = self.model(image, get_feat=True)
+            masks = F.avg_pool2d(masks, 16).squeeze()
             return masks.detach()
         elif 'image' in self.cv_type:
-            masks = F.softmax(self.model(image),1)
+            masks = F.softmax(self.model(image), 1)
             masks1 = ((masks == masks.max(dim=1, keepdim=True)[0]).view_as(masks))*1.
             masks = masks1 - masks.detach() + masks
-            masks = [ (self.colormap[i].reshape((3,1,1))*masks[:,i,:,:].unsqueeze(1).repeat(1,3,1,1)).unsqueeze(1) for i in range(self.num_classes) ]
-            masks = torch.sum(torch.cat(masks,1),1)
+            masks = [ (self.colormap[i].reshape((3, 1, 1))*masks[:, i, :, :].unsqueeze(1).repeat(1, 3, 1, 1)).unsqueeze(1) for i in range(self.num_classes)]
+            masks = torch.sum(torch.cat(masks, 1), 1)
             masks = masks/masks.max()
             return (masks/0.5)-1.
         elif 'conv' in self.cv_type:
-            masks = self.model(image, get_feat = True)
+            masks = self.model(image, get_feat=True)
             return masks
         else:
             masks = self.model(image)

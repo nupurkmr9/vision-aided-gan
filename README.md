@@ -108,7 +108,7 @@ bash docs/setup.sh
 
 For details on off-the-shelf models please see [MODELS.md](docs/MODELS.md)
 
-## Pretrained Models
+## Using Pretrained Models
 Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/)
 
 **To generate images**: 
@@ -119,14 +119,14 @@ Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu
 
 python generate.py --outdir=out --trunc=1 --seeds=85,265,297,849 --network=https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table2_fulldataset/vision-aided-gan-lsunchurch-ada-3.pkl
 ```
-The output is stored in `out` directory controlled by `--outdir`. Our generator architecture is same as styleGAN2 and can be similarly used in the Python code as described in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#using-networks-from-python).
+The above command generates 4 images using the provided seed values and saves it in `out` directory controlled by `--outdir`. Our generator architecture is same as styleGAN2 and can be similarly used in the Python code as described in [stylegan2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/README.md#using-networks-from-python).
 
 **model evaluation**:
 ```.bash
 python calc_metrics.py --network https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table2_fulldataset/vision-aided-gan-lsunchurch-ada-3.pkl --metrics fid50k_full --data lsunchurch --clean 1
 ```
 We use [clean-fid](https://github.com/GaParmar/clean-fid) library to calculate FID metric. We calclate the full real distribution statistics for FID calculation. For details on calculating the statistics, please refer to [clean-fid](https://github.com/GaParmar/clean-fid).
-For default FID evaluation of StyleGAN2-ADA use `clean=0`. 
+For default FID evaluation of StyleGAN2-ADA use `clean=0`. The above command will return the FID `~1.72`
 
 
 ## Datasets
@@ -159,20 +159,24 @@ All other datasets can be downloaded from their repsective websites:
 
 ## Training new networks
 
-**Example command for Vision-aided GAN training with multiple pretrained networks**:
+**Vision-aided GAN training with multiple pretrained networks**:
 ```.bash
-python vision-aided-gan.py --cmd "python train.py --outdir models/ --data datasets/AnimalFace-dog.zip \
-  --gpus 2 --metrics fid50k_full --cfg paper256_2fmap  --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25" \
-  --cv-args "--augcv ada --ada-target-cv 0.3 --augpipecv bgc"  --kimgs-list '1000,1000,1000'  --num 3
+python vision-aided-gan.py --outdir models/ --data datasets/AnimalFace-dog.zip --cfg paper256_2fmap  --mirror 1 \
+--aug ada --augpipe bgc --augcv ada --batch 16 --gpus 2 --kimgs-list '1000,1000,1000'  --num 3
 ```
-We autoamtically select the best model out of the set of pretrained models for training. If fine-tuning a baseline trained model include `--resume <stylegan2-baseline.pkl>` in `--cmd` argument. `--kimgs-list` controls the number of iterations after which next model is added. It is a comma separated list of iteration numbers. For dataset with training samples 1k, we initialize `--kimgs-list` to '4000,1000,1000', and for training samples >1k `--kimgs-list` is '8000,2000,2000'.
 
-**Vision-aided Gan training with a specific pretrained network without model selection**
+The network, sample generated images, and logs are saved at regular intervals (controlled by `--snap` flag) in `models/<exp-folder>` dir, where `<exp-folder>` name is based on input args. Network with each progressive additin of pretrained model is saved in a different directory. Logs are saved as TFevents by default. Wandb logging can be enabled by `--wandb-log` flag and setting wandb `entity` in `training.training_loop`.
+
+If fine-tuning a baseline trained model with vision-aided adversarial loss include `--resume <network.pkl>` in the above command. 
+
+`--kimgs-list` controls the number of iterations after which next off-the-shelf model is added. It is a comma separated list of iteration numbers. For dataset with training samples 1k, we initialize `--kimgs-list` to '4000,1000,1000', and for training samples >1k '8000,2000,2000'.
+
+
+**Vision-aided Gan training with a specific pretrained network**
 
 ```.bash
-python train.py --outdir models/ --data datasets/AnimalFace-dog.zip --gpus 2 --metrics fid50k_full --kimg 25000 \
-  --cfg paper256_2fmap --cv input-clip-output-conv_multi_level --cv-loss multilevel_s --augcv ada \
-  --ada-target-cv 0.3 --augpipecv bgc --batch 16 --mirror 1 --aug ada --augpipe bgc --snap 25 --warmup 1  
+python train.py --outdir models/ --data datasets/AnimalFace-dog.zip --kimg 10000 --cfg paper256_2fmap --gpus 2 \
+--cv input-clip-output-conv_multi_level --cv-loss multilevel_s --augcv ada --mirror 1 --aug ada --warmup 1 
 ```
 
 **model selection**: returns the computer vision model with highest linear probe accuracy for the best FID model in a folder or the given network file.
@@ -182,7 +186,7 @@ python model_selection.py --data mydataset.zip --network  <mynetworkfolder or my
 ```
 
 **To add you own pretrained Model**:
-create the class file to extract pretrained features inside `vision_model` folder. Add the class path in the `class_name_dict` in `vision_model.cvmodel.CVWrapper` class. Update the architecture of trainable classifier head over pretrained features in `training.Daux`.
+create the class file to extract pretrained features inside `vision_model` folder. Add the class path in the `class_name_dict` in `vision_model.cvmodel.CVWrapper` class. Update the architecture of trainable classifier head over pretrained features in `training.cv_discriminator`.
 
 
 
@@ -197,12 +201,12 @@ Training configuration corresponding to training with our loss:
 * `--augcv=diffaugment-<policy>` performs DiffAugment on pretrained model based discriminator with given poilcy e.g. `color,translation,cutout`
 * `--augpipecv=bgc` ADA augmentation strategy. Note: cutout is always enabled. 
 * `--ada-target-cv=0.3` adjusts ADA target value for pretrained model based discriminator.
-* `--exact-resume=1` enables exact resume along with optimizer state. default is 0.
+* `--exact-resume=1` enables resume along with optimizer and augmentation state. default is 0.
 
 StyleGAN2 configurations:
 * `--outdir='models/'` directory to save training runs.
 * `--data` data directory created after running `dataset_tool.py`.
-* `--metrics=fid50kfull` evaluates FID calculation during training at every `snap` iterations. `fid5kfull` can be used for lower time. 
+* `--metrics=fid50kfull` evaluates FID calculation during training at every `snap` iterations.
 * `--cfg=paper256` architecture and hyperparameter configuration for G and D. 
 * `--mirror=1` enables horizontal flipping
 * `--aug=ada` enables ADA augmentation in trainable D. 
@@ -211,7 +215,6 @@ StyleGAN2 configurations:
 * `--snap=25` evaluation and model saving interval
 
 Miscellaneous configurations:
-* `--appendname=''` additional string to append to training directory name.
 * `--wandb-log=1` enables wandb logging.
 * `--clean=1` enables FID calculation using [clean-fid](https://github.com/GaParmar/clean-fid) if the real distribution statistics are pre-calculated. default is false.
 

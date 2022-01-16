@@ -24,10 +24,7 @@ import wandb
 
 import legacy
 from metrics import metric_main
-from torch_utils import persistence
 #----------------------------------------------------------------------------
-# import warnings
-# warnings.filterwarnings("ignore", category=UserWarning)
 
 def setup_snapshot_image_grid(training_set, random_seed=0):
     rnd = np.random.RandomState(random_seed)
@@ -124,8 +121,8 @@ def training_loop(
     abort_fn                = None,     # Callback function for determining whether to abort training. Must return consistent results across ranks.
     progress_fn             = None,     # Callback function for updating training progress. Called for all ranks.
 
-    DAux_kwargs             = None,
-    DAux_opt_kwargs         = None,
+    cvD_kwargs             = None,
+    cvD_opt_kwargs         = None,
     cv_kwargs               = None,     # Options for computer vision model. None = disable.
     warmup                  = False,    # if training from scratch there is a warmup period of standard adversarial training
     cv_loss                 = None,     # what loss on vision model based discriminator.
@@ -134,8 +131,6 @@ def training_loop(
     exact_resume            = 0,        # resume augmentation pipeline and optimizer 
     wandb_log               = False,    # wandb logging instead of tensorboard logging
     clean                   = False,    # FID calculation using clean-fid library or not
-    wandb_resume            = False,
-
 
 ):
     # Initialize.
@@ -171,11 +166,11 @@ def training_loop(
 
     cv_ensemble = None
     cv_type = None
-    DAux =None
+    cvD =None
     if cv_kwargs is not None:
         cv_type = cv_kwargs.cv_type
         cv_ensemble = dnnlib.util.construct_class_by_name(device,**cv_kwargs).requires_grad_(False).to(device) 
-        DAux = dnnlib.util.construct_class_by_name(**DAux_kwargs).train().requires_grad_(False).to(device)
+        cvD = dnnlib.util.construct_class_by_name(**cvD_kwargs).train().requires_grad_(False).to(device)
         
     
     common_kwargs = dict(c_dim=training_set.label_dim, img_resolution=training_set.resolution, img_channels=training_set.num_channels)
@@ -212,8 +207,8 @@ def training_loop(
         with dnnlib.util.open_url(resume_pkl) as f:
             resume_data = legacy.load_network_pkl(f)
         modules_restore = [('G', G), ('D',D),('G_ema', G_ema),]
-        if cv_ensemble is not None and 'DAux' in resume_data and resume_data['DAux'] is not None:
-            modules_restore.append(('DAux', DAux))
+        if cv_ensemble is not None and 'cvD' in resume_data and resume_data['cvD'] is not None:
+            modules_restore.append(('cvD', cvD))
         for name, module in modules_restore: 
             if exact_resume == 1:
                 misc.copy_params_and_buffers(resume_data[name], module, require_all=True)
@@ -245,10 +240,7 @@ def training_loop(
         img = misc.print_module_summary(G, [z, c])
         if cv_kwargs is not None:
             misc.print_module_summary(D, [img , c] )
-            if 'list' in cv_type:
-                misc.print_module_summary(DAux, [cv_ensemble([img,img,img]), c] )
-            else:
-                misc.print_module_summary(DAux, [cv_ensemble(img), c] )
+            misc.print_module_summary(cvD, [cv_ensemble([img,img,img]), c] )
         else:
             misc.print_module_summary(D, [img, c])
         
@@ -257,11 +249,11 @@ def training_loop(
         print(f'Distributing across {num_gpus} GPUs...')
     ddp_modules = dict()
     
-    for name, module in [('G_mapping', G.mapping), ('G_synthesis', G.synthesis), ('D', D), ('DAux', DAux), (None, G_ema), ('augment_pipe', augment_pipe),('augment_pipe_cv', augment_pipe_cv),('cv_ensemble', cv_ensemble)]:
+    for name, module in [('G_mapping', G.mapping), ('G_synthesis', G.synthesis), ('D', D), ('cvD', cvD), (None, G_ema), ('augment_pipe', augment_pipe),('augment_pipe_cv', augment_pipe_cv),('cv_ensemble', cv_ensemble)]:
         if (num_gpus > 1) and (module is not None) and len(list(module.parameters())) != 0:
             if name != 'cv_ensemble':
                 module.requires_grad_(True)
-                module = torch.nn.parallel.DistributedDataParallel(module, device_ids=[device], broadcast_buffers=False)#, find_unused_parameters=True)
+                module = torch.nn.parallel.DistributedDataParallel(module, device_ids=[device], broadcast_buffers=False)
                 module.requires_grad_(False)
         if module is not None and name is not None:
             ddp_modules[name] = module
@@ -275,7 +267,7 @@ def training_loop(
     phases = []
     phase_list = [('G', G, G_opt_kwargs, G_reg_interval), ('D', D, D_opt_kwargs, D_reg_interval)]
     if cv_ensemble is not None:
-        phase_list+=[('DAux', DAux, DAux_opt_kwargs, D_reg_interval)]
+        phase_list+=[('cvD', cvD, cvD_opt_kwargs, D_reg_interval)]
 
     for name, module, opt_kwargs, reg_interval in phase_list:
         if reg_interval is None:
@@ -286,25 +278,25 @@ def training_loop(
             opt_kwargs = dnnlib.EasyDict(opt_kwargs)
             opt_kwargs.lr = opt_kwargs.lr * mb_ratio
             opt_kwargs.betas = [beta ** mb_ratio for beta in opt_kwargs.betas]
-            if name == 'DAux' and DAux is not None:
+            if name == 'cvD' and cvD is not None:
                 params = []
 
                 for i in range(len(cv_ensemble.models)):
-                    params.append({'params':DAux.decoder[i].parameters(),**opt_kwargs})
+                    params.append({'params':cvD.decoder[i].parameters(),**opt_kwargs})
 
                 if len(cv_ensemble.models) >= 1 and exact_resume == 2:
                     opt = dnnlib.util.construct_class_by_name(params= params[:-1], class_name = opt_kwargs['class_name'])
                 else:
                     opt = dnnlib.util.construct_class_by_name(params= params, class_name = opt_kwargs['class_name'])
                     
-                phaseDAux = dnnlib.EasyDict(name=name+'main', module=module, opt=opt, interval=1)
+                phasecvD = dnnlib.EasyDict(name=name+'main', module=module, opt=opt, interval=1)
                 
                 if exact_resume > 0:
                     print("copying optimizer params")
-                    phaseDAux.opt.load_state_dict(resume_data[name+'main'])
+                    phasecvD.opt.load_state_dict(resume_data[name+'main'])
                     
                 if len(cv_ensemble.models) >= 1 and exact_resume == 2:
-                    phaseDAux.opt.add_param_group(params[-1])
+                    phasecvD.opt.add_param_group(params[-1])
                     
             else:
                 opt = dnnlib.util.construct_class_by_name(module.parameters(), **opt_kwargs) # subclass of torch.optim.Optimizer
@@ -349,7 +341,7 @@ def training_loop(
     if rank == 0:
         stats_jsonl = open(os.path.join(run_dir, 'stats.jsonl'), 'wt')
         if wandb_log:
-             wandb.init(project="vision-aided-gan", entity='', name=desc, resume = wandb_resume)
+            wandb.init(project="vision-aided-gan", entity='', name=desc)
         else:
             try:
                 import torch.utils.tensorboard as tensorboard
@@ -394,8 +386,8 @@ def training_loop(
             phase.module.requires_grad_(True)
 
             if 'D' in phase.name and cv_type is not None:
-                phaseDAux.opt.zero_grad(set_to_none=True)
-                phaseDAux.module.requires_grad_(True)
+                phasecvD.opt.zero_grad(set_to_none=True)
+                phasecvD.module.requires_grad_(True)
 
             # Accumulate gradients over multiple rounds.
             for round_idx, (real_img, real_c, gen_z, gen_c) in enumerate(zip(phase_real_img, phase_real_c, phase_gen_z, phase_gen_c)):
@@ -403,12 +395,11 @@ def training_loop(
                 gain = phase.interval
 
                 if warmup and cur_nimg < 5e5:
-                    loss_multiplier = 0.
+                    lambda_= 0.
                 else:
-                    loss_multiplier = 1.
+                    lambda_= 1.
 
-                loss.accumulate_gradients(phase=phase.name, real_img=real_img, real_c=real_c, gen_z=gen_z, gen_c=gen_c, sync=sync, gain=gain, loss_multiplier=loss_multiplier)
-
+                loss.accumulate_gradients(phase=phase.name, real_img=real_img, real_c=real_c, gen_z=gen_z, gen_c=gen_c, sync=sync, gain=gain, lambda_=lambda_)
 
             # Update weights.
             phase.module.requires_grad_(False)
@@ -418,15 +409,14 @@ def training_loop(
                         misc.nan_to_num(param.grad, nan=0, posinf=1e5, neginf=-1e5, out=param.grad)
                 phase.opt.step()
             
-            #update DAux weights
+            #update cvD weights
             if 'D' in phase.name and cv_type is not None:
-                phaseDAux.module.requires_grad_(False)
-                params = [param for param in phaseDAux.module.parameters() if param.grad is not None]
-                with torch.autograd.profiler.record_function(phaseDAux.name + '_opt'):
-                    for param in phaseDAux.module.parameters():
+                phasecvD.module.requires_grad_(False)
+                with torch.autograd.profiler.record_function(phasecvD.name + '_opt'):
+                    for param in phasecvD.module.parameters():
                         if param.grad is not None:
                             misc.nan_to_num(param.grad, nan=0, posinf=1e5, neginf=-1e5, out=param.grad)
-                    phaseDAux.opt.step()
+                    phasecvD.opt.step()
                     
             if phase.end_event is not None:
                 phase.end_event.record(torch.cuda.current_stream(device))
@@ -503,7 +493,7 @@ def training_loop(
         if ((network_snapshot_ticks is not None ) and (done or cur_tick % network_snapshot_ticks == 0) ):
 
             snapshot_data = dict(training_set_kwargs=dict(training_set_kwargs))
-            for name, module in [('G', G), ('D', D), ('G_ema', G_ema), ('DAux', DAux), ('augment_pipe', augment_pipe), ('augment_pipe_cv', augment_pipe_cv)]:
+            for name, module in [('G', G), ('D', D), ('G_ema', G_ema), ('cvD', cvD), ('augment_pipe', augment_pipe), ('augment_pipe_cv', augment_pipe_cv)]:
                 
                 if module is not None:
                     if num_gpus > 1:
@@ -534,8 +524,8 @@ def training_loop(
                     bestFID = result_dict.results['fid50k_full']
                     for phase in phases:
                         snapshot_data[phase.name] = copy.deepcopy(phase.opt.state_dict())
-                    if DAux is not None:
-                        snapshot_data[phaseDAux.name] = copy.deepcopy(phaseDAux.opt.state_dict())
+                    if cvD is not None:
+                        snapshot_data[phasecvD.name] = copy.deepcopy(phasecvD.opt.state_dict())
                     snapshot_pkl = os.path.join(run_dir, f'network-snapshot-best.pkl')
                     if rank == 0:
                         with open(snapshot_pkl, 'wb') as f:
