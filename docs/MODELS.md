@@ -1,6 +1,6 @@
 ## Setting up Off-the-shelf Computer Vision models
 
-If `scripts/setup.sh` not used, individually setup each model by following the below steps:
+If `docs/setup.sh` not used, individually setup each model by following the below steps:
 
 **[CLIP(ViT)](https://github.com/openai/CLIP)**: we modify the model.py function to return intermediate features of the transformer model. 
 
