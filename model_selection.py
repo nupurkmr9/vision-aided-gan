@@ -68,7 +68,7 @@ def calc_linearprobe(network_pkl, data, batch=64, cv_models_list=None, device='c
         class_name = 'vision_model.cvmodel.CVWrapper'
         cv_specs = {'cv_type': cv}
         cv_kwargs = dnnlib.EasyDict(class_name=class_name, **cv_specs)
-        cv_pipe = dnnlib.util.construct_class_by_name(device, **cv_kwargs).requires_grad_(False).to(device)
+        cv_ensemble = dnnlib.util.construct_class_by_name(device, **cv_kwargs).requires_grad_(False).to(device)
 
         val_feats = []
         val_label = []
@@ -91,7 +91,7 @@ def calc_linearprobe(network_pkl, data, batch=64, cv_models_list=None, device='c
             with torch.no_grad():
                 for _, (val_img, _) in enumerate(training_set_iterator):
                     val_img = (val_img.to(device).to(torch.float32) / 127.5 - 1.)
-                    val_feat = cv_pipe([val_img])[0]
+                    val_feat = cv_ensemble([val_img])[0]
                     feats.append(val_feat.cpu())
                     label.append(np.ones(val_feat.size(0)))
                     if len(feats)*batch > 10000:
@@ -113,7 +113,7 @@ def calc_linearprobe(network_pkl, data, batch=64, cv_models_list=None, device='c
                 for _ in range(len(training_set) // batch):
                     z = torch.randn(batch, G_ema.z_dim)
                     val_img = G_ema(z.to(device), None)
-                    val_feat = cv_pipe([val_img])[0]
+                    val_feat = cv_ensemble([val_img])[0]
                     feats.append(val_feat.cpu())
                     label.append(np.zeros(val_feat.size(0)))
                     if len(feats)*batch > 10000:

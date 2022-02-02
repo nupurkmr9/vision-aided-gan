@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -146,7 +147,7 @@ class ModifiedResNet(nn.Module):
         x2 = self.layer3(x1)
         x3 = self.layer4(x2)
         if return_intermediate:
-            return [x1,x2,x3]
+            return [x1, x2, x3]
         x = self.attnpool(x3)
 
         return x
@@ -191,10 +192,11 @@ class ResidualAttentionBlock(nn.Module):
             x = x + self.mlp(self.ln_2(x))
             return x, weight
         else:
-            x = x +attention_res[0]
+            x = x + attention_res[0]
             x = x + self.mlp(self.ln_2(x))
             return x
-        
+
+
 class Transformer(nn.Module):
     def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None):
         super().__init__()
@@ -202,13 +204,13 @@ class Transformer(nn.Module):
         self.layers = layers
         self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers)])
 
-    def forward(self, x: torch.Tensor, return_intermediate= False):
+    def forward(self, x: torch.Tensor, return_intermediate=False):
         if return_intermediate:
             features = []
-            feat_points = [0,4,8,len(self.resblocks)]
+            feat_points = [0, 4, 8, len(self.resblocks)]
             for i in range(len(feat_points)-1):
                 x = self.resblocks[feat_points[i]:feat_points[i+1]](x)
-                features.append(x.permute(1,0,2))
+                features.append(x.permute(1, 0, 2))
             return features
         else:
             return self.resblocks(x)
@@ -240,7 +242,7 @@ class VisualTransformer(nn.Module):
         x = self.ln_pre(x)
 
         x1 = x.permute(1, 0, 2)  # NLD -> LND
-        x1 = self.transformer(x1, return_intermediate = return_intermediate)
+        x1 = self.transformer(x1, return_intermediate=return_intermediate)
 
         if return_intermediate:
             x = self.ln_post(x1[-1][:, 0, :])
@@ -254,7 +256,6 @@ class VisualTransformer(nn.Module):
             if self.proj is not None:
                 x = x @ self.proj
             return x
-
 
 
 class CLIP(nn.Module):
@@ -356,7 +357,7 @@ class CLIP(nn.Module):
 
     def encode_image(self, image):
         return self.visual(image.type(self.dtype))
-        
+
     def encode_text(self, text):
         x = self.token_embedding(text).type(self.dtype)  # [batch_size, n_ctx, d_model]
 
@@ -451,4 +452,3 @@ def build_model(state_dict: dict):
     convert_weights(model)
     model.load_state_dict(state_dict)
     return model.eval()
-
