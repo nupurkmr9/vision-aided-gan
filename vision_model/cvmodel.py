@@ -8,7 +8,7 @@ import dnnlib
 
 
 class Vgg(nn.Module):
-    def __init__(self, cv_type='adv'):
+    def __init__(self, cv_type):
         super().__init__()
         self.cv_type = cv_type
         self.model = antialiased_cnns.vgg16(pretrained=True, filter_size=4).features
@@ -17,7 +17,7 @@ class Vgg(nn.Module):
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
         self.image_mean = torch.tensor([0.485, 0.456, 0.406])
         self.image_std = torch.tensor([0.229, 0.224, 0.225])
-        
+
     def forward(self, image):
         image = F.interpolate(image*0.5+0.5, size=(224, 224), mode='area')
         image = image - self.image_mean[:, None, None].to(image.device)
@@ -33,7 +33,7 @@ class Vgg(nn.Module):
 
 class Swin(torch.nn.Module):
 
-    def __init__(self, cv_type='adv'):
+    def __init__(self, cv_type):
         super().__init__(
         )
 
@@ -63,7 +63,7 @@ class Swin(torch.nn.Module):
         x = self.model.norm(x)
         if return_intermediate:
             return x.transpose(1, 2)
-        
+
         x = self.model.avgpool(x.transpose(1, 2)) 
         x = torch.flatten(x, 1)
         return x
@@ -77,13 +77,12 @@ class Swin(torch.nn.Module):
             final_feat = self.forward_features_custom_swin(image, return_intermediate=True)
             final_feat = final_feat.reshape(-1, 768, 7, 7)
             return final_feat
-            
         return self.model.forward_features(image)
 
-  
+
 class CLIP(torch.nn.Module):
 
-    def __init__(self, cv_type='adv'):
+    def __init__(self, cv_type):
         super().__init__(
         )
 
@@ -95,26 +94,25 @@ class CLIP(torch.nn.Module):
 
         self.image_mean = torch.tensor([0.48145466, 0.4578275, 0.40821073])
         self.image_std = torch.tensor([0.26862954, 0.26130258, 0.27577711])
- 
+
     def __call__(self, image):
         image = F.interpolate(image*0.5+0.5, size=(224, 224), mode='area')
         image = image - self.image_mean[:, None, None].to(image.device)
         image /= self.image_std[:, None, None].to(image.device)
-            
+
         if 'conv_multi_level' in self.cv_type:
             image_features = self.model(image.type(self.model.conv1.weight.dtype), return_intermediate=True)
             image_features[0] = image_features[0][:, 1:, :].permute(0, 2, 1).reshape(-1,768,7,7).float()
             image_features[1] = image_features[1][:, 1:, :].permute(0, 2, 1).reshape(-1,768,7,7).float()
             image_features[2] = image_features[2].float()
         else:
-            image_features = self.model(image.type(self.model.conv1.weight.dtype)).float()
-            
+            image_features = self.model(image.type(self.model.conv1.weight.dtype)).float()  
         return image_features
-            
+
 
 class DINO(torch.nn.Module):
 
-    def __init__(self, cv_type='adv'):
+    def __init__(self, cv_type):
         super().__init__(
         )
 
@@ -130,7 +128,6 @@ class DINO(torch.nn.Module):
         image = F.interpolate(image*0.5+0.5, size=(224,224), mode='area')
         image = image - self.image_mean[:, None, None].to(image.device)
         image /= self.image_std[:, None, None].to(image.device)
-        
         if 'conv_multi_level' in self.cv_type:
             image_features = self.model.get_intermediate_layers(image, n=8)
             image_features = [image_features[x] for x in [0,4,-1]]
@@ -138,9 +135,9 @@ class DINO(torch.nn.Module):
             image_features[1] = image_features[1][:,1:,:].permute(0,2,1).reshape(-1,768,14,14)
             image_features[2] = image_features[2][:,0,:]
         else:
-            image_features = self.model(image)
-            
+            image_features = self.model(image)      
         return image_features
+
 
 class CVWrapper(torch.nn.Module):
 

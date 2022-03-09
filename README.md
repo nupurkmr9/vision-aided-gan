@@ -23,7 +23,7 @@ We find that pretrained computer vision models can significantly improve perform
 
 Ensembling Off-the-shelf Models for GAN Training <br>
 [Nupur Kumari](https://nupurkmr9.github.io/), [Richard Zhang](https://richzhang.github.io/), [Eli Shechtman](https://research.adobe.com/person/eli-shechtman/), [Jun-Yan Zhu](https://www.cs.cmu.edu/~junyanz/)<br>
-arXiv 2112.09130, 2021
+In CVPR 2022
 
 ## Quantitative Comparison
 

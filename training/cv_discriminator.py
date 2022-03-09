@@ -10,23 +10,17 @@ class MultiLevelDViT(nn.Module):
     def __init__(self, level=3, in_ch1=768, in_ch2=512, out_ch=256, down=1):
         super().__init__()
 
-        self.decoder1 = []
+        self.decoder = nn.ModuleList([])
         for _ in range(level-1):
-            self.decoder1.append(nn.Sequential(Conv2dLayer(in_ch1, out_ch, kernel_size=3, down=down, activation='lrelu'),
-                                               Conv2dLayer(out_ch, 1, kernel_size=1, down=2)))
-
-        self.decoder1.append(nn.Sequential(FullyConnectedLayer(in_ch2, out_ch, activation='lrelu'),
-                                           FullyConnectedLayer(out_ch, 1)))
-
-        self.decoder1 = nn.ModuleList(self.decoder1)
+            self.decoder.append(nn.Sequential(Conv2dLayer(in_ch1, out_ch, kernel_size=3, down=down, activation='lrelu'),
+                                              Conv2dLayer(out_ch, 1, kernel_size=1, down=2)))
+        self.decoder.append(nn.Sequential(FullyConnectedLayer(in_ch2, out_ch, activation='lrelu'),
+                                          FullyConnectedLayer(out_ch, 1)))
 
     def forward(self, input):
-
         final_pred = []
-
         for i in range(len(input)-1):
             final_pred.append(self.decoder1[i](input[i]).reshape(-1, 1, 9))
-
         final_pred.append(self.decoder1[-1](input[-1].float()))
 
         return final_pred
@@ -57,40 +51,6 @@ class MLPD(nn.Module):
 
     def forward(self, input):
         return self.decoder(input)
-
-
-@persistence.persistent_class
-class MultiLevelDConv(nn.Module):
-    def __init__(self, level=3, in_ch1=512, in_ch2=1024, in_ch3=2048, out_ch=128):
-        super().__init__()
-
-        self.decoder1 = []
-        activation = 'lrelu'
-
-        self.decoder1.append(nn.Sequential(
-                    Conv2dLayer(in_ch1, out_ch, kernel_size=3, down=2, activation='lrelu'),
-                    Conv2dLayer(in_ch1, 1, kernel_size=1, down=2)))
-
-        self.decoder1.append(nn.Sequential(
-                    Conv2dLayer(in_ch2, out_ch, kernel_size=3, activation=activation),
-                    Conv2dLayer(out_ch, 1, kernel_size=1, down=2)))
-
-        self.decoder1.append(nn.Sequential(nn.AdaptiveAvgPool2d(1), nn.Flatten(),
-                                           FullyConnectedLayer(in_ch3, out_ch, activation='lrelu'),
-                                           FullyConnectedLayer(out_ch, 1)))
-
-        self.decoder1 = nn.ModuleList(self.decoder1)
-
-    def forward(self, input):
-
-        final_pred = []
-
-        final_pred.append(self.decoder1[0](input[0].float()).reshape(-1, 1, 49))
-        final_pred.append(self.decoder1[1](input[1].float()).reshape(-1, 1, 49))
-
-        final_pred.append(self.decoder1[-1](input[-1].float()))
-
-        return final_pred
 
 
 @persistence.persistent_class

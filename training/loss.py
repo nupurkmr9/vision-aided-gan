@@ -76,7 +76,7 @@ class StyleGAN2Loss(Loss):
                 img_cv = [DiffAugment(self.augment_pipe_cv(img, prob=self.augment_pipe_cv.p[i]), policy='cutout')
                           for i in range(len(self.cv_ensemble.models))]
             else:
-                img_cv = img
+                img_cv = [img for i in range(self.num_models)]
 
             if detach:
                 with torch.no_grad():
