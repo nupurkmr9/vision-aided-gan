@@ -190,8 +190,6 @@ def _reconstruct_persistent_obj(meta):
     module = _src_to_module(meta.module_src)
 
     assert meta.type == 'class'
-#     if 'CLIP' in meta.class_name:
-#     print(meta.class_name)#meta.module_src)
         
     orig_class = module.__dict__[meta.class_name]
     decorator_class = persistent_class(orig_class)
@@ -220,14 +218,6 @@ def _module_to_src(module):
 def _src_to_module(src):
     r"""Get or create a Python module for the given source code.
     """
-    if 'from .clip_model import ResidualAttentionBlock' in src:
-        src = src.replace('from .clip_model import ResidualAttentionBlock', '')
-    if 'from .face_normal import ResNetUNet' in src:
-        src = src.replace('from .face_normal import ResNetUNet', '')
-    if 'from .landmarks_augment import *' in src:
-        src = src.replace('from .landmarks_augment import *', '')
-        
-        
     module = _src_to_module_dict.get(src, None)
     if module is None:
         module_name = "_imported_module_" + uuid.uuid4().hex
@@ -235,7 +225,6 @@ def _src_to_module(src):
         sys.modules[module_name] = module
         _module_to_src_dict[module] = src
         _src_to_module_dict[src] = module
-#         print(src, module.__dict__)
         exec(src, module.__dict__) # pylint: disable=exec-used
     return module
 
