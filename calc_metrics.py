@@ -62,11 +62,15 @@ def subprocess_fn(rank, args, temp_dir):
             print(f'Calculating {metric}...')
         progress = metric_utils.ProgressMonitor(verbose=args.verbose)
         result_dict = metric_main.calc_metric(metric=metric, G=G, dataset_kwargs=args.dataset_kwargs,
-            num_gpus=args.num_gpus, rank=rank, device=device, progress=progress, num_gen=args.num_gen, clean=args.clean)
+            num_gpus=args.num_gpus, rank=rank, device=device, progress=progress, num_gen=args.num_gen, clean=args.clean, name=args.name, split=args.split)
         if 'nn_train' in metric:
             nn_images = result_dict['results']
             nn_images = nn_images['nn_images']
             torchvision.utils.save_image(nn_images*0.5+0.5, os.path.join(args.run_dir, str(args.num_gen)+'_nn.jpg'), nrow=11)
+        if 'sort' in metric:
+            sorted_images = result_dict['results']
+            sorted_images = sorted_images['sorted_images']
+            torchvision.utils.save_image(sorted_images, os.path.join(args.run_dir,f'{args.name}_maximum_distance.jpg'), nrow=6)
         else:
             if rank == 0:
                 metric_main.report_metric(result_dict, run_dir=args.run_dir, snapshot_pkl=args.network_pkl)
@@ -100,9 +104,10 @@ class CommaSeparatedList(click.ParamType):
 @click.option('--verbose', help='Print optional information', type=bool, default=True, metavar='BOOL', show_default=True)
 @click.option('--numgen', help='number of generated samples', type=int, default=50000)
 @click.option('--clean', help='Whether FID is clean or not', type=bool, metavar='BOOL', default=False)
+@click.option('--name', help='name of dataset according to clean-fid', type=str)
+@click.option('--split', help='split of dataset according to clean-fid', type=str)
 
-
-def calc_metrics(ctx, network_pkl, metrics, data, mirror, gpus, verbose, numgen, clean):
+def calc_metrics(ctx, network_pkl, metrics, data, mirror, gpus, verbose, numgen, clean, name, split):
     """Calculate quality metrics for previous training run or pretrained network pickle.
 
     Examples:
@@ -131,6 +136,8 @@ def calc_metrics(ctx, network_pkl, metrics, data, mirror, gpus, verbose, numgen,
         fid50k       Frechet inception distance against 50k real images.
         kid50k       Kernel inception distance against 50k real images.
         pr50k3       Precision and recall against 50k real images.
+        nn_train     Get nearest neighbour images from "args.data" training set for each "args.numgen" generted images
+        sort_likelihood get top and bottom generated images according to log likelihood in inception feature space. requires args.name and args.split for clean-fid model name and dataset split
         ppl2_wend    Perceptual path length in W at path endpoints against full image.
         ppl_zfull    Perceptual path length in Z for full paths against cropped image.
         ppl_wfull    Perceptual path length in W for full paths against cropped image.
@@ -157,6 +164,8 @@ def calc_metrics(ctx, network_pkl, metrics, data, mirror, gpus, verbose, numgen,
  
     args.num_gen = numgen
     args.network_pkl = network_pkl
+    args.name = name
+    args.split = split
     # Initialize dataset options.
     if data is not None:
         args.dataset_kwargs = dnnlib.EasyDict(class_name='training.dataset.ImageFolderDataset', path=data)
@@ -183,6 +192,9 @@ def calc_metrics(ctx, network_pkl, metrics, data, mirror, gpus, verbose, numgen,
         pkl_dir = os.path.dirname(network_pkl)
         if os.path.isfile(os.path.join(pkl_dir, 'training_options.json')):
             args.run_dir = pkl_dir
+    elif 'http' in network_pkl:
+        args.run_dir = './out'
+        os.makedirs(args.run_dir, exist_ok=True)
     
     del network_dict
     

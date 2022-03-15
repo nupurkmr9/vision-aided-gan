@@ -115,6 +115,12 @@ def nn_train(opts):
     return {'nn_images': nn_images}
 
 @register_metric
+def sort_likelihood(opts):
+    opts.dataset_kwargs.update(max_size=None, xflip=False)
+    sorted_images = frechet_inception_distance.sort_likelihood(opts, max_real=None, num_gen=opts.num_gen)
+    return {'sorted_images': sorted_images}
+
+@register_metric
 def ppl2_wend(opts):
     ppl = perceptual_path_length.compute_ppl(opts, num_samples=50000, epsilon=1e-4, space='w', sampling='end', crop=False, batch_size=2)
     return dict(ppl2_wend=ppl)

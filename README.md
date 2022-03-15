@@ -90,6 +90,12 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 </p>
 </details>
 
+Example command to create similar visualization. The output image is saved in `out` directory for the below command. 
+
+```.bash
+python calc_metrics.py --metrics sort_likelihood --name afhq_dog --split train --network https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table3_afhq/vision-aided-gan-afhqdog-ada-3.pkl --data afhqdog
+```
+
 ## Requirements
 
 * 64-bit Python 3.8 and PyTorch 1.8.0 (or later). See [https://pytorch.org/](https://pytorch.org/) for PyTorch install instructions.
