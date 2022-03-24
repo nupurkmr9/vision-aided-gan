@@ -20,8 +20,8 @@ class MultiLevelDViT(nn.Module):
     def forward(self, input):
         final_pred = []
         for i in range(len(input)-1):
-            final_pred.append(self.decoder1[i](input[i]).reshape(-1, 1, 9))
-        final_pred.append(self.decoder1[-1](input[-1].float()))
+            final_pred.append(self.decoder[i](input[i]).reshape(-1, 1, 9))
+        final_pred.append(self.decoder[-1](input[-1].float()))
 
         return final_pred
 
