@@ -102,7 +102,7 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 
 
 ### Vision-aided StyleGAN2 training
-Please see [vision-aided-stylegan2](https://github.com/nupurkmr9/vision_aided_module/tree/main/stylegan2) README for training StyleGAN2 models with our method. This code will reproduce all StyleGAN2 based results from our paper. 
+Please see [stylegan2](https://github.com/nupurkmr9/vision_aided_module/tree/main/stylegan2) README for training StyleGAN2 models with our method. This code will reproduce all StyleGAN2 based results from our paper. 
 
 ### Vision-aided Discriminator in a custom GAN model
 
@@ -148,10 +148,10 @@ Arg details:
 * `device`: device for off-the-shelf model weights.
 
 ### Vision-aided StyleGAN3 training
-Please see [vision-aided-stylegan3](https://github.com/nupurkmr9/vision_aided_module/tree/main/stylegan3) README for training StyleGAN3 models with our method.
+Please see [stylegan3](https://github.com/nupurkmr9/vision_aided_module/tree/main/stylegan3) README for training StyleGAN3 models with our method.
 
 ### Vision-aided BigGAN training
-Please see [vision-aided-biggan](https://github.com/nupurkmr9/vision_aided_module/tree/main/biggan) README for training BigGAN models with our method.
+Please see [biggan](https://github.com/nupurkmr9/vision_aided_module/tree/main/biggan) README for training BigGAN models with our method.
 
 ### To add you own pretrained Model
 
