@@ -32,7 +32,7 @@ For default FID evaluation of StyleGAN2-ADA use `clean=0`. The above command wil
 ```.bash
 python calc_metrics.py --metrics sort_likelihood --name afhq_dog --split train --network https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table3_afhq/vision-aided-gan-afhqdog-ada-3.pkl --data afhqdog
 ```
-Example command to create similar visualization as shown [here](https://github.com/nupurkmr9/vision_aided_module#worst-sample-visualzation). The output image is saved in `out` directory for the above command. 
+Example command to create similar visualization as shown [here](https://github.com/nupurkmr9/vision-aided-gan#worst-sample-visualzation). The output image is saved in `out` directory for the above command. 
 
 ## Datasets
 
@@ -86,7 +86,7 @@ create the class file to extract pretrained features as `vision_module/<custom_m
 Training configuration corresponding to training with our loss:
 * `--cv=input-<cv_type>-output-<output_type>` pretrained network and its configuration.
 * `--warmup=0` should be number of iterations after which vision-aided loss is added (~5e5) when training from scratch. Introduces our loss after training with warmup images of training. 
-* `--cv-loss=multilevel_sigmoid_s` what loss to use on pretrained model based discriminator as described [here](https://github.com/nupurkmr9/vision_aided_module#vision-aided-discriminator-in-a-custom-gan-model).
+* `--cv-loss=multilevel_sigmoid_s` what loss to use on pretrained model based discriminator as described [here](https://github.com/nupurkmr9/vision-aided-gan#vision-aided-discriminator-in-a-custom-gan-model).
 * `--augcv=ada` performs ADA augmentation on pretrained model based discriminator.
 * `--augcv=diffaugment-<policy>` performs DiffAugment on pretrained model based discriminator with given poilcy e.g. `color,translation,cutout`
 * `--augpipecv=bgc` ADA augmentation strategy. Note: cutout is always enabled. 

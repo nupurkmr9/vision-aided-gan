@@ -72,7 +72,9 @@ We provide all the training scripts in the `scripts` folder. For e.g. to train o
 
 ```bash
 #install vision-aided-gan library if not already done
-pip install vision_aided_loss
+cd ..
+pip install .
+cd biggan
 
 # collect FID statistics
 CUDA_VISIBLE_DEVICES=0 python calculate_inception_moments.py --dataset C10
