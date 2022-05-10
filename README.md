@@ -162,11 +162,12 @@ create the class file to extract pretrained features as `vision_module/<custom_m
 ## References
 
 ```
-@article{kumari2021ensembling,
+@InProceedings{kumari2021ensembling,
   title={Ensembling Off-the-shelf Models for GAN Training},
   author={Kumari, Nupur and Zhang, Richard and Shechtman, Eli and Zhu, Jun-Yan},
-  journal={arXiv preprint arXiv:2112.09130},
-  year={2021}
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  month     = {June},
+  year      = {2022}
 }
 ```
 
