@@ -106,7 +106,7 @@ Please see [stylegan2](https://github.com/nupurkmr9/vision-aided-gan/tree/main/s
 
 ### Vision-aided Discriminator in a custom GAN model
 
-install the library
+install the library via `pip install git+https://github.com/nupurkmr9/vision-aided-gan.git` or
 ```.bash
 git clone https://github.com/nupurkmr9/vision-aided-gan.git
 cd vision-aided-gan
