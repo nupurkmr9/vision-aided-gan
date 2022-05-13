@@ -164,7 +164,7 @@ def training_loop(
         
     cvD =None
     if cvD_kwargs is not None:
-        cvD = dnnlib.util.construct_class_by_name(**cvD_kwargs).train().requires_grad_(False).to(device)
+        cvD = dnnlib.util.construct_class_by_name(**cvD_kwargs, device=device).train().requires_grad_(False).to(device)
 
     common_kwargs = dict(c_dim=training_set.label_dim, img_resolution=training_set.resolution, img_channels=training_set.num_channels)
     G = dnnlib.util.construct_class_by_name(**G_kwargs, **common_kwargs).train().requires_grad_(False).to(device) # subclass of torch.nn.Module
