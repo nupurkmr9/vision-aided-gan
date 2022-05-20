@@ -101,6 +101,10 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 </details>
 
 
+
+### Pretrained Models
+Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/). For more details on usage please see README in the folder [stylegan2](https://github.com/nupurkmr9/vision-aided-gan/tree/main/stylegan2) and [biggan](https://github.com/nupurkmr9/vision-aided-gan/tree/main/biggan). 
+
 ### Vision-aided StyleGAN2 training
 Please see [stylegan2](https://github.com/nupurkmr9/vision-aided-gan/tree/main/stylegan2) README for training StyleGAN2 models with our method. This code will reproduce all StyleGAN2 based results from our paper. 
 
