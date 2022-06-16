@@ -12,7 +12,7 @@
 
 **[NEW!]** Vision-aided GAN training with BigGAN and StyleGAN3
 
-**[NEW!]** Using vision-aided Discriminator in your own GAN training.
+**[NEW!]** Using vision-aided Discriminator in your own GAN training with `pip install vision-aided-loss`
 <img src='docs/code.gif' align="center" width=800>
 
 
@@ -110,12 +110,8 @@ Please see [stylegan2](https://github.com/nupurkmr9/vision-aided-gan/tree/main/s
 
 ### Vision-aided Discriminator in a custom GAN model
 
-install the library via `pip install git+https://github.com/nupurkmr9/vision-aided-gan.git` or
-```.bash
-git clone https://github.com/nupurkmr9/vision-aided-gan.git
-cd vision-aided-gan
-pip install .
-```
+install the library via `pip install git+https://github.com/nupurkmr9/vision-aided-gan.git` or `pip install vision-aided-loss`
+
 For details on off-the-shelf models please see [MODELS.md](docs/MODELS.md)
 
 
@@ -159,9 +155,7 @@ Please see [biggan](https://github.com/nupurkmr9/vision-aided-gan/tree/main/bigg
 
 ### To add you own pretrained Model
 
-create the class file to extract pretrained features as `vision_module/<custom_model>.py`. Add the class path in the `class_name_dict` in `vision_module.cvmodel.CVBackbone` class. Update the architecture of trainable classifier head over pretrained features in `vision_module.cv_discriminator`. Reinstall library via `pip install .`
-
-
+create the class file to extract pretrained features as `vision_module/<custom_model>.py`. Add the class path in the `class_name_dict` in `vision_module.cvmodel.CVBackbone` class. Update the architecture of trainable classifier head over pretrained features in `vision_module.cv_discriminator`. Reinstall library manually via `pip install .`
 
 ## References
 
