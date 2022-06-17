@@ -1,9 +1,9 @@
 # Vision-aided GAN
 
 
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ensembling-off-the-shelf-models-for-gan/image-generation-on-lsun-churches-256-x-256)](https://paperswithcode.com/sota/image-generation-on-lsun-churches-256-x-256?p=ensembling-off-the-shelf-models-for-gan)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ensembling-off-the-shelf-models-for-gan/image-generation-on-lsun-horse-256-x-256)](https://paperswithcode.com/sota/image-generation-on-lsun-horse-256-x-256?p=ensembling-off-the-shelf-models-for-gan)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ensembling-off-the-shelf-models-for-gan/image-generation-on-lsun-cat-256-x-256)](https://paperswithcode.com/sota/image-generation-on-lsun-cat-256-x-256?p=ensembling-off-the-shelf-models-for-gan)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/ensembling-off-the-shelf-models-for-gan/image-generation-on-lsun-churches-256-x-256)](https://paperswithcode.com/sota/image-generation-on-lsun-churches-256-x-256?p=ensembling-off-the-shelf-models-for-gan)
 
 
 ### [video](https://youtu.be/oHdyJNdQ9E4) | [website](https://www.cs.cmu.edu/~vision-aided-gan/) |   [paper](https://arxiv.org/abs/2112.09130)
@@ -13,6 +13,7 @@
 **[NEW!]** Vision-aided GAN training with BigGAN and StyleGAN3
 
 **[NEW!]** Using vision-aided Discriminator in your own GAN training with `pip install vision-aided-loss`
+
 <img src='docs/code.gif' align="center" width=800>
 
 
