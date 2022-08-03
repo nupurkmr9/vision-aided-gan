@@ -192,7 +192,7 @@ def calc_metrics(ctx, network_pkl, metrics, data, mirror, gpus, verbose, numgen,
         pkl_dir = os.path.dirname(network_pkl)
         if os.path.isfile(os.path.join(pkl_dir, 'training_options.json')):
             args.run_dir = pkl_dir
-    elif 'http' in network_pkl:
+    else:
         args.run_dir = './out'
         os.makedirs(args.run_dir, exist_ok=True)
     
