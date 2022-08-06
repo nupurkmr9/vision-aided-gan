@@ -8,8 +8,122 @@ The main dependencies are:
 - python libraries: `pip install -r docs/requirements.txt`
 
 
-## Using Pretrained Models
-Our final trained models can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/)
+## Pretrained Models
+
+
+#### Large scale datasets
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Dataset</th>
+<th valign="bottom">Resolution</th>
+<th valign="bottom">download</th>
+<th valign="bottom">FID (Inception)</th>
+<th valign="bottom">FID (SwAV)</th>
+
+<!-- TABLE BODY -->
+<tr><td align="left">LSUN Horse</td>
+<td align="left">256</td>
+<td align="center"><a href="https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table2_fulldataset/vision-aided-gan-lsunhorse-ada-3.pkl">model</a></td>
+<td align="center">2.11</td>
+<td align="center">0.71</td>
+</tr>
+
+<tr><td align="left">LSUN Cat</td>
+<td align="left">256</td>
+<td align="center"><a href="https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table2_fulldataset/vision-aided-gan-lsuncat-ada-3.pkl">model</a></td>
+<td align="center">3.98</td>
+<td align="center">1.03</td>
+</tr>
+
+
+<tr><td align="left">LSUN Church</td>
+<td align="left">256</td>
+<td align="center"><a href="https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table2_fulldataset/vision-aided-gan-lsunchurch-ada-3.pkl">model</a></td>
+<td align="center">1.72</td>
+<td align="center">0.58</td>
+</tr>
+
+<tr><td align="left">FFHQ</td>
+<td align="left">1024</td>
+<td align="center"><a href="https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table2_fulldataset/vision-aided-gan-ffhq-ada-2.pkl">model</a></td>
+<td align="center">3.01</td>
+<td align="center">0.38</td>
+</tr>
+
+</tbody></table>
+
+
+#### Limited and Few-shot datasets
+
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Dataset</th>
+<th valign="bottom">Resolution</th>
+<th valign="bottom">download</th>
+<th valign="bottom">FID (Inception)</th>
+<th valign="bottom">FID (SwAV)</th>
+
+<tr><td align="left">AFHQ Dog</td>
+<td align="left">512</td>
+<td align="center"><a href="https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table3_afhq/vision-aided-gan-afhqcat-ada-3.pkl">model</a></td>
+<td align="center">4.73</td>
+<td align="center">1.04</td>
+</tr>
+
+
+
+<tr><td align="left">AFHQ Cat</td>
+<td align="left">512</td>
+<td align="center"><a href="https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table3_afhq/vision-aided-gan-afhqdog-ada-3.pkl">model</a></td>
+<td align="center">2.53</td>
+<td align="center">0.62</td>
+</tr>
+
+
+
+<tr><td align="left">AFHQ Wild</td>
+<td align="left">512</td>
+<td align="center"><a href="https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table3_afhq/vision-aided-gan-afhqwild-ada-3.pkl">model</a></td>
+<td align="center">2.36</td>
+<td align="center">1.10</td>
+</tr>
+
+
+
+<tr><td align="left">AnimalFace-Dog</td>
+<td align="left">256</td>
+<td align="center"><a href="https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table4_fewshot/vision-aided-gan-animalface_dog-ada-3.pkl">model</a></td>
+<td align="center">32.56</td>
+<td align="center">6.47</td>
+</tr>
+
+
+
+<tr><td align="left">AnimalFace-Cat</td>
+<td align="left">256</td>
+<td align="center"><a href="https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table4_fewshot/vision-aided-gan-animalface_cat-ada-3.pkl">model</a></td>
+<td align="center">27.35</td>
+<td align="center">5.18</td>
+</tr>
+
+
+<tr><td align="left">100-shot Bridge-of-Sighs</td>
+<td align="left">256</td>
+<td align="center"><a href="https://www.cs.cmu.edu/~vision-aided-gan/models/main_paper_table4_fewshot/vision-aided-gan-bridge-diffaug-3.pkl">model</a></td>
+<td align="center">34.35</td>
+<td align="center">3.46</td>
+</tr>
+
+
+
+</tbody></table>
+
+
+Other pre-trained models including experiments with varying training samples can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/).
 
 **To generate images**: 
 
