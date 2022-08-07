@@ -71,7 +71,7 @@ def calc_linearprobe(network_pkl, data, batch=64, cv_models_list=None, device='c
         output_type = cv.split('output-')[1]
         cv_type = cv.split('-output')[0].split('input-')[1]
         
-        cv_ensemble = vision_module.cvmodel.CVBackbone(cv_type= cv_type, output_type = output_type, diffaug = False).requires_grad_(False).to(device)
+        cv_ensemble = vision_module.cvmodel.CVBackbone(cv_type= cv_type, output_type = output_type, diffaug = False, device=device).requires_grad_(False).to(device)
 
         val_feats = []
         val_label = []
