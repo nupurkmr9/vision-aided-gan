@@ -105,9 +105,9 @@ We randomly sample 5k images and sort them according to Mahalanobis distance usi
 
 ### Pretrained Models
 
-StyleGAN2 pretrained models: [https://github.com/nupurkmr9/vision-aided-gan/blob/main/stylegan2/README.md#pretrained-models](https://github.com/nupurkmr9/vision-aided-gan/blob/main/stylegan2/README.md#pretrained-models)
+StyleGAN2 [models](https://github.com/nupurkmr9/vision-aided-gan/blob/main/stylegan2/README.md#pretrained-models)
 
-BigGAN pretrained models: [https://github.com/nupurkmr9/vision-aided-gan/tree/main/README.md](https://github.com/nupurkmr9/vision-aided-gan/tree/main/README.md)
+BigGAN [models](https://github.com/nupurkmr9/vision-aided-gan/tree/main/biggan#pre-trained-models-and-evaluation)
 
 All pre-trained models can be downloaded at this [link](https://www.cs.cmu.edu/~vision-aided-gan/models/) as well. 
 
