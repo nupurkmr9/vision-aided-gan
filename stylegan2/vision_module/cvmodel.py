@@ -84,7 +84,7 @@ class Swin(torch.nn.Module):
             x = x.reshape(-1, 768, 7, 7)
             return x
             
-        return self.model.forward_features(x)
+        return self.forward_custom(x)
 
 
 class CLIP(torch.nn.Module):
