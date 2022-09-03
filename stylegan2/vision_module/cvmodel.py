@@ -63,7 +63,7 @@ class Swin(torch.nn.Module):
 
     def forward_custom(self, x, return_intermediate=False):
         x = self.model.patch_embed(x)
-        if self.model.ape:
+        if self.model.absolute_pos_embed is not None
             x = x + self.model.absolute_pos_embed
         x = self.model.pos_drop(x)
         x = self.model.layers(x)     
@@ -71,8 +71,7 @@ class Swin(torch.nn.Module):
         if return_intermediate:
             return x.transpose(1, 2)
         
-        x = self.model.avgpool(x.transpose(1, 2)) 
-        x = torch.flatten(x, 1)
+        x = x.mean(dim=1)
         return x
 
     def __call__(self, x):
