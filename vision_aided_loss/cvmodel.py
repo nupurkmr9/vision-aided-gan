@@ -71,8 +71,7 @@ class Swin(torch.nn.Module):
         if return_intermediate:
             return x.transpose(1, 2)
         
-        x = self.model.avgpool(x.transpose(1, 2)) 
-        x = torch.flatten(x, 1)
+        x = x.mean(dim=1)
         return x
 
     def __call__(self, x):
@@ -85,7 +84,7 @@ class Swin(torch.nn.Module):
             x = x.reshape(-1, 768, 7, 7)
             return x
             
-        return self.model.forward_features(x)
+        return sself.forward_custom(x)
 
 
 class CLIP(torch.nn.Module):
