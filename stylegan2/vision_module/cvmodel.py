@@ -63,7 +63,7 @@ class Swin(torch.nn.Module):
 
     def forward_custom(self, x, return_intermediate=False):
         x = self.model.patch_embed(x)
-        if self.model.absolute_pos_embed is not None
+        if self.model.absolute_pos_embed is not None:
             x = x + self.model.absolute_pos_embed
         x = self.model.pos_drop(x)
         x = self.model.layers(x)     
